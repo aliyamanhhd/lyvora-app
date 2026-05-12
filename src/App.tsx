@@ -308,6 +308,9 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, from: "system", text: "✨ Mood seç ve anonim sohbet ekranına geç." }
   ]);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceDuration, setVoiceDuration] = useState(0);
+  const [voicePreviewPlaying, setVoicePreviewPlaying] = useState(false);
 
   function scrollToSection(target: "features" | "pricing") {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
@@ -400,6 +403,16 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    if (!isRecordingVoice) return;
+
+    const voiceRecordTicker = window.setInterval(() => {
+      setVoiceDuration((prev) => Math.min(59, prev + 1));
+    }, 1000);
+
+    return () => window.clearInterval(voiceRecordTicker);
+  }, [isRecordingVoice]);
 
   useEffect(() => {
     if (!activeRoomId || !user) return;
@@ -740,6 +753,70 @@ export default function App() {
     const key = selectedMood?.id && REPLIES[selectedMood.id] ? selectedMood.id : "default";
     const pool = REPLIES[key];
     return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function formatVoiceDuration(seconds: number) {
+    const safeSeconds = Math.max(1, Math.min(59, seconds || 1));
+    return `0:${String(safeSeconds).padStart(2, "0")}`;
+  }
+
+  function startVoiceRecording() {
+    if (!requireSignedIn("Sesli mesaj göndermek için giriş yapmalısın.")) return;
+    if (blockedRooms.includes(activeRoomId)) return setToast("⛔ Bu sohbet engellendi.");
+    setVoiceDuration(0);
+    setIsRecordingVoice(true);
+    setToast("🎙️ Ses kaydı başladı.");
+  }
+
+  async function finishVoiceRecording() {
+    if (!isRecordingVoice) return;
+
+    setIsRecordingVoice(false);
+
+    const duration = formatVoiceDuration(voiceDuration || 4);
+    const voiceText = `voice::${duration}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), from: "me", text: voiceText, time: "Şimdi", uid: user?.uid }
+    ]);
+
+    try {
+      await addDoc(collection(db, "rooms", activeRoomId, "messages"), {
+        from: "me",
+        text: voiceText,
+        uid: user?.uid || "anonymous",
+        type: "voice",
+        duration,
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.warn("Voice message save skipped:", error);
+    }
+
+    setDeliveryState("Gönderildi");
+    window.setTimeout(() => setDeliveryState("İletildi"), 420);
+    window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
+    setVoiceDuration(0);
+    setIsTyping(true);
+
+    window.setTimeout(() => {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          from: "bot",
+          text: "Sesini aldım. Enerjin çok net geldi ✨",
+          time: "Şimdi"
+        }
+      ]);
+    }, 1100);
+  }
+
+  function cancelVoiceRecording() {
+    setIsRecordingVoice(false);
+    setVoiceDuration(0);
+    setToast("🎙️ Ses kaydı iptal edildi.");
   }
 
   async function sendMessage(text?: string) {
@@ -1174,8 +1251,49 @@ export default function App() {
             <div ref={messagesEndRef} />
           </div>
           <div style={s.quickReplies}>{["Naber?", "Biraz konuşalım", "Oyun", "Ruh halim karışık"].map((item) => <button key={item} style={s.quickButton} onClick={() => sendMessage(item)}>{item}</button>)}</div>
-          <footer style={s.inputArea}>
-            <input style={s.messageInput} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={isTyping ? "Karşı taraf yazıyor..." : "Mesaj yaz..."} maxLength={MESSAGE_MAX_LENGTH} onKeyDown={(e) => e.key === "Enter" && sendMessage()} />
+          <footer style={isRecordingVoice ? s.inputAreaRecording : s.inputArea}>
+            <button
+              type="button"
+              style={isRecordingVoice ? s.micButtonRecording : s.micButton}
+              onMouseDown={startVoiceRecording}
+              onMouseUp={finishVoiceRecording}
+              onMouseLeave={cancelVoiceRecording}
+              onTouchStart={startVoiceRecording}
+              onTouchEnd={finishVoiceRecording}
+              aria-label="Sesli mesaj"
+            >
+              {isRecordingVoice ? "●" : "🎙️"}
+            </button>
+
+            {isRecordingVoice ? (
+              <div style={s.voiceRecordingBar}>
+                <div style={s.voiceRecordingInfo}>
+                  <b>Kaydediliyor</b>
+                  <span>{formatVoiceDuration(voiceDuration)}</span>
+                </div>
+                <div style={s.waveformRow}>
+                  {Array.from({ length: 18 }).map((_, index) => (
+                    <i
+                      key={index}
+                      style={{
+                        ...s.waveBar,
+                        height: 8 + ((index * 7 + voiceDuration * 5) % 24)
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <input
+                style={s.messageInput}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={isTyping ? "Karşı taraf yazıyor..." : "Mesaj yaz veya mikrofona basılı tut..."}
+                maxLength={MESSAGE_MAX_LENGTH}
+                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              />
+            )}
+
             <button style={s.sendButton} onClick={() => sendMessage()}>➤</button>
           </footer>
           <BottomNav active="chat" onHome={() => { setActiveTab("home"); setScreen("home"); }} onChat={() => setScreen("chat")} onProfile={() => { setActiveTab("profile"); setScreen("home"); }} onPremium={() => { setActiveTab("premium"); setScreen("home"); }} />
@@ -1198,32 +1316,6 @@ export default function App() {
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
-        <div style={musicPlaying ? s.musicWidgetActive : s.musicWidget} className="lv-card">
-          <button type="button" style={s.radioControlButton} onClick={previousTrack} aria-label="Önceki şarkı">‹</button>
-
-          <button
-            type="button"
-            style={s.radioMainButton}
-            onClick={toggleRadio}
-            aria-label={musicPlaying ? "Müziği durdur" : "Müziği başlat"}
-          >
-            <div style={s.musicDisc}>{musicPlaying ? "⏸️" : currentTrack.mood}</div>
-            <div style={{ flex: 1, textAlign: "left" }}>
-              <b style={{ display: "block" }}>{currentTrack.title}</b>
-              <span style={{ color: "rgba(255,255,255,.62)", fontSize: 12 }}>
-                {musicPlaying ? `Çalıyor • ${currentTrack.vibe}` : `${currentTrack.vibe} • Başlatmak için dokun`}
-              </span>
-            </div>
-            <div style={s.musicBars}>
-              <span style={{ width: 4, height: musicPlaying ? 8 : 6, borderRadius: 99, background: "white", animation: musicPlaying ? "lvMusicBounce .8s ease-in-out infinite" : "none", opacity: musicPlaying ? 1 : .45 }}></span>
-              <span style={{ width: 4, height: musicPlaying ? 14 : 6, borderRadius: 99, background: "white", animation: musicPlaying ? "lvMusicBounce 1s ease-in-out infinite" : "none", opacity: musicPlaying ? 1 : .45 }}></span>
-              <span style={{ width: 4, height: musicPlaying ? 10 : 6, borderRadius: 99, background: "white", animation: musicPlaying ? "lvMusicBounce .9s ease-in-out infinite" : "none", opacity: musicPlaying ? 1 : .45 }}></span>
-            </div>
-          </button>
-
-          <button type="button" style={s.radioControlButton} onClick={nextTrack} aria-label="Sonraki şarkı">›</button>
-        </div>
-
         {activeTab === "home" && (
           <>
             <div style={s.statusPill}><span style={s.onlineDot}></span>{liveOnlineCount.toLocaleString("tr-TR")} kişi şu an aktif</div>
@@ -1236,6 +1328,12 @@ export default function App() {
             </section>
             </section>
             <section style={s.appStoreStrip}><div><b>4.9</b><span> app feel</span></div><div><b>96%</b><span> match vibe</span></div><div><b>Live</b><span> presence</span></div></section>
+            <LiveVibePanel
+              onlineCount={liveOnlineCount}
+              regionLabel={regionMatchLabel(regionProfile)}
+              onVoicePreview={() => setVoicePreviewPlaying((prev) => !prev)}
+              previewPlaying={voicePreviewPlaying}
+            />
             <section style={s.storyRow}>
               {[
                 { icon: "+", mood: MOODS[7], label: "Rastgele" },
@@ -1423,6 +1521,82 @@ function SupportWidget({
         {open ? "×" : "💬"}
       </button>
     </div>
+  );
+}
+
+function VoiceWave({ active = false }: { active?: boolean }) {
+  return (
+    <div style={s.voiceWave}>
+      {Array.from({ length: 16 }).map((_, index) => (
+        <span
+          key={index}
+          style={{
+            ...s.voiceWaveBar,
+            height: active ? 8 + ((index * 9) % 25) : 8 + ((index * 5) % 18),
+            opacity: active ? 1 : 0.72
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function VoiceMessageCard({ duration }: { duration: string }) {
+  const [playing, setPlaying] = useState(false);
+
+  return (
+    <button style={s.voiceMessageCard} onClick={() => setPlaying((prev) => !prev)}>
+      <span style={playing ? s.voicePlayActive : s.voicePlay}>{playing ? "Ⅱ" : "▶"}</span>
+      <VoiceWave active={playing} />
+      <b>{duration}</b>
+    </button>
+  );
+}
+
+function LiveVibePanel({
+  onlineCount,
+  regionLabel,
+  onVoicePreview,
+  previewPlaying
+}: {
+  onlineCount: number;
+  regionLabel: string;
+  onVoicePreview: () => void;
+  previewPlaying: boolean;
+}) {
+  return (
+    <section style={s.liveVibePanel} className="lv-premium-depth">
+      <div style={s.liveVibeTop}>
+        <div>
+          <b>Canlı vibe</b>
+          <span>{regionLabel} • şu an eşleşenler</span>
+        </div>
+        <strong><span style={s.liveTinyDot}></span>{onlineCount.toLocaleString("tr-TR")}</strong>
+      </div>
+
+      <div style={s.liveMatchRow}>
+        {[
+          { mark: "☾", label: "Gece", value: "96%" },
+          { mark: "◈", label: "Bağ", value: "93%" },
+          { mark: "⌘", label: "Oyun", value: "89%" }
+        ].map((item) => (
+          <div key={item.label} style={s.liveMatchChip}>
+            <i>{item.mark}</i>
+            <span>{item.label}</span>
+            <b>{item.value}</b>
+          </div>
+        ))}
+      </div>
+
+      <button style={s.voicePreviewCard} onClick={onVoicePreview}>
+        <span style={previewPlaying ? s.voicePlayActive : s.voicePlay}>{previewPlaying ? "Ⅱ" : "▶"}</span>
+        <div>
+          <b>Voice preview</b>
+          <small>{previewPlaying ? "Canlı ses dalgası aktif" : "Sesli mesaj deneyimini önizle"}</small>
+        </div>
+        <VoiceWave active={previewPlaying} />
+      </button>
+    </section>
   );
 }
 
@@ -1614,7 +1788,11 @@ function Bubble({ msg }: { msg: Message }) {
         ...(msg.from === "system" ? s.systemMessage : {})
       }}
     >
-      <span>{msg.text}</span>
+      {String(msg.text).startsWith("voice::") ? (
+        <VoiceMessageCard duration={String(msg.text).replace("voice::", "") || "0:04"} />
+      ) : (
+        <span>{msg.text}</span>
+      )}
       {msg.time && <small style={s.time}>{msg.time}</small>}
     </div>
   );
