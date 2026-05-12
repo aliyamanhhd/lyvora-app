@@ -1236,8 +1236,47 @@ export default function App() {
             </section>
             </section>
             <section style={s.appStoreStrip}><div><b>4.9</b><span> app feel</span></div><div><b>96%</b><span> match vibe</span></div><div><b>Live</b><span> presence</span></div></section>
-            <section style={s.storyRow}>{["+", "✨", "🌙", "🎧", "💜", "🔥"].map((item, i) => <div key={i} style={i === 0 ? s.storyAdd : s.story}>{item}</div>)}</section>
-            <section style={s.discoverStrip}>{DISCOVER_CARDS.map((card) => <button key={card.title} className="lv-premium-depth" style={s.discoverCard} onClick={() => startChat(MOODS.find((m) => m.emoji === card.emoji) || MOODS[0])}><span>{card.emoji}</span><b>{card.title}</b><small>{card.tag} • %{card.match}</small></button>)}</section>
+            <section style={s.storyRow}>
+              {[
+                { icon: "+", mood: MOODS[7], label: "Rastgele" },
+                { icon: "✧", mood: MOODS[7], label: "Rastgele" },
+                { icon: "☾", mood: MOODS[1], label: "Gece" },
+                { icon: "⌘", mood: MOODS[3], label: "Oyun" },
+                { icon: "◈", mood: MOODS[2], label: "Bağ" },
+                { icon: "✺", mood: MOODS[6], label: "Enerji" }
+              ].map((item, i) => (
+                <button
+                  key={item.label + i}
+                  style={i === 0 ? s.storyAdd : s.story}
+                  onClick={() => startChat(item.mood)}
+                  title={item.label}
+                >
+                  {item.icon}
+                </button>
+              ))}
+            </section>
+            <section style={s.discoverStrip}>
+              {DISCOVER_CARDS.map((card) => {
+                const linkedMood =
+                  card.title.includes("Gece") ? MOODS[1] :
+                  card.title.includes("Oyun") ? MOODS[3] :
+                  card.title.includes("Derin") ? MOODS[2] :
+                  MOODS[7];
+
+                return (
+                  <button
+                    key={card.title}
+                    className="lv-premium-depth"
+                    style={s.discoverCard}
+                    onClick={() => startChat(linkedMood)}
+                  >
+                    <span>{card.emoji}</span>
+                    <b>{card.title}</b>
+                    <small>{card.tag} • %{card.match}</small>
+                  </button>
+                );
+              })}
+            </section>
             <section style={s.activityFeedPanel}><div style={s.sectionHeader}><b>Live activity</b><span>{activityPulse} yeni sinyal</span></div>{ACTIVITY_FEED.slice(0,3).map((item) => <div key={item.title} style={s.activityItem}><span style={s.activityIcon}>{item.icon}</span><div><b>{item.title}</b><small>{item.text}</small></div><em>{item.time}</em></div>)}</section>
             <RegionMatchPanel region={regionProfile} score={regionalMatchScore} onChange={(nextRegion) => { setRegionProfile(nextRegion); setRegionalMatchScore(nextRegion.mode === "local" ? 97 : nextRegion.mode === "country" ? 92 : 84); }} />
             <section style={s.moodGrid}>{MOODS.map((mood) => <button key={mood.id} className="lv-premium-depth" style={{ ...s.moodCard, borderColor: `${mood.color}44` }} onClick={() => startChat(mood)}><span style={s.moodIcon}>{mood.emoji}</span><b>{mood.title}</b><small>{mood.desc}</small></button>)}</section>
@@ -2680,8 +2719,14 @@ const s: Record<string, React.CSSProperties> = {
   homeTitle: { fontSize: "clamp(42px,8vw,60px)", lineHeight: 0.98, letterSpacing: -2.2, margin: "0 0 14px", fontWeight: 950 },
   homeText: { color: "rgba(255,255,255,.68)", margin: 0, fontSize: 16, lineHeight: 1.55 },
   storyRow: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12, marginBottom: 16 },
-  story: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 25, background: "linear-gradient(135deg,#7c3aed,#ec4899)", border: "2px solid rgba(255,255,255,.18)", boxShadow: "0 12px 30px rgba(168,85,247,.23)" },
-  storyAdd: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 30, background: "rgba(255,255,255,.06)", border: "2px dashed rgba(168,85,247,.5)", color: "#c084fc" },
+  story: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 25, background: "linear-gradient(135deg,#7c3aed,#ec4899)", border: "2px solid rgba(255,255,255,.18)", boxShadow: "0 12px 30px rgba(168,85,247,.23)" ,
+    cursor: "pointer",
+    border: "1px solid rgba(255,255,255,.14)"
+  },
+  storyAdd: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 30, background: "rgba(255,255,255,.06)", border: "2px dashed rgba(168,85,247,.5)", color: "#c084fc" ,
+    cursor: "pointer",
+    border: "1px solid rgba(255,255,255,.14)"
+  },
   moodGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 13 },
   moodCard: {
   position: "relative",
