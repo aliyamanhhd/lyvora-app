@@ -118,6 +118,75 @@ const FINAL_POLISH_NOTES = [
 
 const AVATARS = ["🌙", "💜", "✨", "🔥", "🎧", "🎮", "🦋", "☁️"];
 
+const USERNAME_MIN_LENGTH = 3;
+const USERNAME_MAX_LENGTH = 18;
+const MESSAGE_MAX_LENGTH = 600;
+
+const SPLASH_TRANSLATIONS: Record<string, {
+  headline: string;
+  subline: string;
+  loading: string;
+  wait: string;
+  badges: string[];
+}> = {
+  tr: {
+    headline: "Lyvora ile anonim bir hayata hoş geldiniz",
+    subline: "Kendin ol. Özgürce sohbet et. Gerçek kimliğini gizli tut. Burada yargı yok, sadece sen varsın.",
+    loading: "Yükleniyor...",
+    wait: "Lütfen bekleyin",
+    badges: ["Gizli", "Güvenli", "Sınırsız", "Gerçek"]
+  },
+  en: {
+    headline: "Welcome to an anonymous life with Lyvora",
+    subline: "Be yourself. Chat freely. Keep your real identity private. No judgment here, just you.",
+    loading: "Loading...",
+    wait: "Please wait",
+    badges: ["Private", "Safe", "Unlimited", "Real"]
+  },
+  de: {
+    headline: "Willkommen in einem anonymen Leben mit Lyvora",
+    subline: "Sei du selbst. Chatte frei. Halte deine echte Identität privat. Keine Bewertung, nur du.",
+    loading: "Wird geladen...",
+    wait: "Bitte warten",
+    badges: ["Privat", "Sicher", "Unbegrenzt", "Echt"]
+  },
+  fr: {
+    headline: "Bienvenue dans une vie anonyme avec Lyvora",
+    subline: "Sois toi-même. Discute librement. Garde ta vraie identité privée. Ici, pas de jugement.",
+    loading: "Chargement...",
+    wait: "Veuillez patienter",
+    badges: ["Privé", "Sécurisé", "Illimité", "Réel"]
+  },
+  es: {
+    headline: "Bienvenido a una vida anónima con Lyvora",
+    subline: "Sé tú mismo. Chatea libremente. Mantén tu identidad real privada. Aquí no hay juicio.",
+    loading: "Cargando...",
+    wait: "Por favor espera",
+    badges: ["Privado", "Seguro", "Ilimitado", "Real"]
+  },
+  ar: {
+    headline: "مرحباً بك في حياة مجهولة مع Lyvora",
+    subline: "كن على طبيعتك. تحدث بحرية. حافظ على هويتك الحقيقية خاصة. هنا لا يوجد حكم عليك.",
+    loading: "جارٍ التحميل...",
+    wait: "يرجى الانتظار",
+    badges: ["خاص", "آمن", "غير محدود", "حقيقي"]
+  },
+  ru: {
+    headline: "Добро пожаловать в анонимную жизнь с Lyvora",
+    subline: "Будь собой. Общайся свободно. Сохраняй настоящую личность в тайне. Здесь нет осуждения.",
+    loading: "Загрузка...",
+    wait: "Пожалуйста, подождите",
+    badges: ["Приватно", "Безопасно", "Безлимитно", "Настояще"]
+  }
+};
+
+function getSplashLocale() {
+  const language = (typeof navigator !== "undefined" ? navigator.language : "en").toLowerCase();
+  const code = language.split("-")[0];
+  return SPLASH_TRANSLATIONS[code] || SPLASH_TRANSLATIONS.en;
+}
+
+
 const ACTIVITY_FEED: ActivityItem[] = [
   { icon: "💜", title: "Yeni eşleşme", text: "Gece modu odasında biri seninle uyumlu.", time: "şimdi" },
   { icon: "🔥", title: "Profil ziyareti", text: "Bir kullanıcı premium profilini görüntüledi.", time: "2 dk" },
@@ -188,6 +257,10 @@ export default function App() {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [authGuardNotice, setAuthGuardNotice] = useState("");
+  const [blockedRooms, setBlockedRooms] = useState<string[]>([]);
+  const [reportReason, setReportReason] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
   const [supportText, setSupportText] = useState("");
   const [supportTyping, setSupportTyping] = useState(false);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([
@@ -379,6 +452,19 @@ export default function App() {
 
 
 
+  function requireSignedIn(actionText = "Bu işlem için giriş yapmalısın.") {
+    if (user) return true;
+
+    setAuthGuardNotice(actionText);
+    setNotice(actionText);
+    setScreen("auth");
+    return false;
+  }
+
+  function cleanUsername(value: string) {
+    return value.trim().replace(/\s+/g, "_").slice(0, USERNAME_MAX_LENGTH);
+  }
+
   async function upsertUserProfile(currentUser: User, extra?: { username?: string; avatar?: string }) {
     try {
       const userRef = doc(db, "users", currentUser.uid);
@@ -387,7 +473,7 @@ export default function App() {
       const payload = {
         uid: currentUser.uid,
         email: currentUser.email || "",
-        displayName: extra?.username || currentUser.displayName || currentUser.email?.split("@")[0] || "Lyvora kullanıcısı",
+        displayName: cleanUsername(extra?.username || currentUser.displayName || currentUser.email?.split("@")[0] || "Lyvora kullanıcısı"),
         avatar: extra?.avatar || avatar,
         premium: false,
         level: 1,
@@ -441,13 +527,15 @@ export default function App() {
   async function handleAuth() {
     if (!email.trim() || !password.trim()) return setNotice("E-posta ve şifre gerekli.");
     if (authMode === "register" && !username.trim()) return setNotice("Kayıt için kullanıcı adı gerekli.");
+    if (authMode === "register" && cleanUsername(username).length < USERNAME_MIN_LENGTH) return setNotice("Kullanıcı adı en az 3 karakter olmalı.");
+    if (password.length < 6) return setNotice("Şifre en az 6 karakter olmalı.");
     try {
       setLoading(true);
       setNotice("");
       if (authMode === "register") {
         const result = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await updateProfile(result.user, { displayName: username.trim() });
-        await upsertUserProfile(result.user, { username: username.trim(), avatar });
+        await updateProfile(result.user, { displayName: cleanUsername(username) });
+        await upsertUserProfile(result.user, { username: cleanUsername(username), avatar });
         setUser(result.user);
       } else {
         const result = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -531,6 +619,51 @@ export default function App() {
     return "Mesajını aldık. Lyvora ekibi en kısa sürede destek akışını daha da geliştirecek. Şimdilik buradan hızlı yardım alabilirsin.";
   }
 
+  async function reportActiveChat() {
+    if (!requireSignedIn("Rapor göndermek için giriş yapmalısın.")) return;
+
+    const reason = reportReason.trim();
+    if (reason.length < 3) {
+      setToast("🚨 Rapor sebebi en az 3 karakter olmalı.");
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "reports"), {
+        reporterId: user?.uid || "",
+        roomId: activeRoomId,
+        moodId: selectedMood?.id || "",
+        moodTitle: selectedMood?.title || "",
+        reason,
+        status: "open",
+        createdAt: serverTimestamp()
+      });
+
+      setToast("🚨 Rapor gönderildi. Teşekkürler.");
+      setShowReportModal(false);
+      setReportReason("");
+    } catch (error) {
+      console.warn("Report save skipped:", error);
+      setToast("🚨 Rapor alındı. Bağlantı düzelince tekrar deneyebilirsin.");
+      setShowReportModal(false);
+      setReportReason("");
+    }
+  }
+
+  function blockActiveChat() {
+    setBlockedRooms((prev) => {
+      if (prev.includes(activeRoomId)) return prev;
+      return [...prev, activeRoomId];
+    });
+
+    setToast("⛔ Bu sohbet engellendi.");
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now(), from: "system", text: "⛔ Bu eşleşme engellendi. Yeni bir mood seçerek devam edebilirsin.", time: "Şimdi" }
+    ]);
+    setScreen("home");
+  }
+
   async function logout() {
     await signOut(auth);
     setUser(null);
@@ -541,6 +674,7 @@ export default function App() {
   }
 
   async function startChat(mood: Mood) {
+    if (!requireSignedIn("Sohbet başlatmak için giriş yapmalısın.")) return;
     setSelectedMood(mood);
     const roomId = await createMoodRoom(mood);
     setActiveRoomId(roomId);
@@ -566,7 +700,9 @@ export default function App() {
   }
 
   async function sendMessage(text?: string) {
-    const value = (text || message).trim();
+    const value = (text || message).trim().slice(0, MESSAGE_MAX_LENGTH);
+    if (!requireSignedIn("Mesaj göndermek için giriş yapmalısın.")) return;
+    if (blockedRooms.includes(activeRoomId)) return setToast("⛔ Bu sohbet engellendi.");
     if (!value || isTyping) return;
     setMessages((prev) => [...prev, { id: Date.now(), from: "me", text: value, time: "Şimdi", uid: user?.uid }]);
 
@@ -683,7 +819,7 @@ export default function App() {
 
           <div style={s.heroDevice} className="lv-float-soft lv-hero-device">
             <div style={s.deviceTop}>
-              <Brand avatar="🌙" sub="iOS preview" />
+              <Brand sub="iOS preview" />
               <span style={s.devicePill}>Live</span>
             </div>
             <div style={s.deviceMood}>🌙 Gece modu</div>
@@ -814,6 +950,26 @@ export default function App() {
           <button type="button" onClick={() => setScreen("contact")}>İletişim</button>
         </footer>
 
+        {showReportModal && (
+          <div style={s.reportOverlay}>
+            <div style={s.reportModal} className="lv-pop">
+              <h3 style={s.reportTitle}>Kullanıcıyı Rapor Et</h3>
+              <p style={s.reportText}>Bu sohbeti güvenlik ekibine bildirebilirsin. Lütfen kısa bir sebep yaz.</p>
+              <textarea
+                style={s.reportInput}
+                value={reportReason}
+                onChange={(event) => setReportReason(event.target.value)}
+                placeholder="Örn: spam, rahatsız edici konuşma, sahte profil..."
+                maxLength={300}
+              />
+              <div style={s.reportActions}>
+                <button style={s.chatGhostButton} onClick={() => setShowReportModal(false)}>Vazgeç</button>
+                <button style={s.chatDangerButton} onClick={reportActiveChat}>Raporu Gönder</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <SupportWidget
           open={supportOpen}
           setOpen={setSupportOpen}
@@ -881,7 +1037,7 @@ export default function App() {
         <ThemeFX light={isLight} />
         <section style={s.authShell} className="lv-auth-shell">
           <div style={s.authSide} className="lv-auth-side">
-            <div style={s.bigLogo}>🌙</div>
+            <div style={s.bigLogo}><LyvoraLogo size={72} /></div>
             <h1 style={s.authTitle} className="lv-auth-title">Lyvora’ya hoş geldin</h1>
             <p style={s.authText} className="lv-auth-text">Modern, güvenli ve mood tabanlı anonim sohbet deneyimine giriş yap.</p>
             <div style={s.authMiniGrid}>
@@ -892,6 +1048,7 @@ export default function App() {
           </div>
 
           <div style={s.authCard} className="lv-pop lv-auth-card">
+            {authGuardNotice && <div style={s.authGuardBox}>🔐 {authGuardNotice}</div>}
             <div style={s.authSwitch}>
               <button style={authMode === "login" ? s.authSwitchActive : s.authSwitchButton} onClick={() => setAuthMode("login")}>Giriş Yap</button>
               <button style={authMode === "register" ? s.authSwitchActive : s.authSwitchButton} onClick={() => setAuthMode("register")}>Kayıt Ol</button>
@@ -964,6 +1121,10 @@ export default function App() {
             </div>
             <button style={s.endButton} onClick={() => setScreen("home")}>Bitir</button>
           </header>
+          <div style={s.chatSafetyRow}>
+            <button style={s.chatDangerButton} onClick={() => setShowReportModal(true)}>🚨 Rapor Et</button>
+            <button style={s.chatGhostButton} onClick={blockActiveChat}>⛔ Engelle</button>
+          </div>
           <div style={s.chatInfo}><b>✨ Sohbet başladı!</b><span>İkiniz de {selectedMood?.title} modundasınız.</span></div>
           <div style={s.typingTopBar}>✨ typing sync active • ultra connection stable</div>
           <div style={s.chatPresenceStrip}><span style={s.liveTinyDot}></span><b>Canlı bağlantı aktif</b><small>{deliveryState}</small></div>
@@ -974,7 +1135,7 @@ export default function App() {
           </div>
           <div style={s.quickReplies}>{["Naber?", "Biraz konuşalım", "Oyun", "Ruh halim karışık"].map((item) => <button key={item} style={s.quickButton} onClick={() => sendMessage(item)}>{item}</button>)}</div>
           <footer style={s.inputArea}>
-            <input style={s.messageInput} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={isTyping ? "Karşı taraf yazıyor..." : "Mesaj yaz..."} onKeyDown={(e) => e.key === "Enter" && sendMessage()} />
+            <input style={s.messageInput} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={isTyping ? "Karşı taraf yazıyor..." : "Mesaj yaz..."} maxLength={MESSAGE_MAX_LENGTH} onKeyDown={(e) => e.key === "Enter" && sendMessage()} />
             <button style={s.sendButton} onClick={() => sendMessage()}>➤</button>
           </footer>
           <BottomNav active="chat" onHome={() => { setActiveTab("home"); setScreen("home"); }} onChat={() => setScreen("chat")} onProfile={() => { setActiveTab("profile"); setScreen("home"); }} onPremium={() => { setActiveTab("premium"); setScreen("home"); }} />
@@ -995,6 +1156,7 @@ export default function App() {
 
         {toast && <div style={s.toast} onClick={() => setToast("")}>🔔 {dynamicToast || toast}</div>}
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat</small></div>
+        <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         <div style={musicPlaying ? s.musicWidgetActive : s.musicWidget} className="lv-card">
           <button type="button" style={s.radioControlButton} onClick={previousTrack} aria-label="Önceki şarkı">‹</button>
@@ -1187,18 +1349,53 @@ function SupportWidget({
 }
 
 function SplashScreen() {
+  const splash = getSplashLocale();
+
   return (
     <main style={s.splashPage}>
-      <ThemeFX />
-      <section style={s.splashCard} className="lv-splash-card">
-        <div style={s.splashLogo} className="lv-logo-pulse">🌙</div>
-        <h1 style={s.splashTitle}>Lyvora</h1>
-        <p style={s.splashText}>matching energies...</p>
-        <div style={s.loadingTrack}><div style={s.loadingFill} className="lv-loading-fill" /></div>
+      <div style={s.splashGrid}></div>
+      <div style={s.splashOrbOne}></div>
+      <div style={s.splashOrbTwo}></div>
+
+      <section style={s.splashPremiumCard} className="lv-pop">
+        <div style={s.splashLogoMark}>
+          <LyvoraLogo size={108} />
+        </div>
+
+        <div style={s.splashWordmark}>LYVORA</div>
+        <div style={s.splashMiniLine}></div>
+
+        <h1 style={s.splashWelcome}>
+          <span>Lyvora</span>{" "}
+          {splash.headline.replace(/^Lyvora\s*(ile|with)?\s*/i, "")}
+        </h1>
+
+        <p style={s.splashSubline}>{splash.subline}</p>
+
+        <div style={s.splashHeart}>💜</div>
+
+        <div style={s.splashSpinnerWrap}>
+          <div style={s.splashSpinner}></div>
+        </div>
+
+        <b style={s.splashLoadingText}>{splash.loading}</b>
+        <small style={s.splashWaitText}>{splash.wait}</small>
+
+        <div style={s.splashDivider}></div>
+
+        <div style={s.splashBadges}>
+          <span><b>🛡️</b>{splash.badges[0]}</span>
+          <span><b>🔒</b>{splash.badges[1]}</span>
+          <span><b>∞</b>{splash.badges[2]}</span>
+          <span><b>💜</b>{splash.badges[3]}</span>
+        </div>
       </section>
+
+      <footer style={s.splashCopyright}>Lyvora © 2026</footer>
     </main>
   );
 }
+
 
 function BottomNav({ active, onHome, onChat, onProfile, onPremium }: { active: Tab; onHome: () => void; onChat: () => void; onProfile: () => void; onPremium: () => void }) {
   return (
@@ -1321,16 +1518,22 @@ function TypingBubble() {
 function LyvoraLogo({ size = 52 }: { size?: number }) {
   return (
     <div style={{ ...s.lyvoraLogoWrap, width: size, height: size }}>
-      <svg viewBox="0 0 64 64" width="100%" height="100%">
+      <svg viewBox="0 0 64 64" width="100%" height="100%" aria-label="Lyvora Neon V Logo">
         <defs>
-          <linearGradient id="lyvoraMoon" x1="12" y1="8" x2="54" y2="58">
-            <stop offset="0%" stopColor="#c084fc" />
-            <stop offset="45%" stopColor="#f472b6" />
-            <stop offset="100%" stopColor="#22d3ee" />
+          <linearGradient id="lyvoraNeonV" x1="10" y1="8" x2="54" y2="58">
+            <stop offset="0%" stopColor="#22d3ee" />
+            <stop offset="45%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#f472b6" />
           </linearGradient>
 
-          <filter id="lyvoraGlow">
-            <feGaussianBlur stdDeviation="3.5" result="blur" />
+          <radialGradient id="lyvoraNeonBg" cx="50%" cy="45%" r="65%">
+            <stop offset="0%" stopColor="rgba(168,85,247,.42)" />
+            <stop offset="58%" stopColor="rgba(34,211,238,.14)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,.04)" />
+          </radialGradient>
+
+          <filter id="lyvoraNeonGlow">
+            <feGaussianBlur stdDeviation="3.8" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
               <feMergeNode in="SourceGraphic" />
@@ -1344,20 +1547,29 @@ function LyvoraLogo({ size = 52 }: { size?: number }) {
           width="56"
           height="56"
           rx="18"
-          fill="rgba(255,255,255,.06)"
+          fill="url(#lyvoraNeonBg)"
+          stroke="rgba(255,255,255,.16)"
+          strokeWidth="1"
         />
 
         <path
-          d="M42 43C30 48 17 40 17 27C17 18 24 11 33 10C28 14 26 20 28 26C31 36 41 39 49 34C48 38 46 41 42 43Z"
-          fill="url(#lyvoraMoon)"
-          filter="url(#lyvoraGlow)"
+          d="M15 15L29.4 49H35.2L49 15H40.6L32.4 38.2L23.9 15H15Z"
+          fill="url(#lyvoraNeonV)"
+          filter="url(#lyvoraNeonGlow)"
         />
 
-        <circle cx="46" cy="17" r="3" fill="#fff" opacity=".9" />
         <path
-          d="M48 8L50 13L55 15L50 17L48 22L46 17L41 15L46 13Z"
-          fill="#f5d0fe"
+          d="M20 15L31.8 43.2L43.8 15"
+          fill="none"
+          stroke="rgba(255,255,255,.78)"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity=".55"
         />
+
+        <circle cx="50" cy="13" r="2.2" fill="#fff" opacity=".85" />
+        <circle cx="13" cy="50" r="1.8" fill="#22d3ee" opacity=".75" />
       </svg>
     </div>
   );
@@ -1852,12 +2064,163 @@ input::placeholder { color: rgba(255,255,255,.42); }
   }
 }
 
+
+/* Lyvora v3.8.20 - Real User System Foundation */
+.lv-light-mode [style*="rgba(34,197,94,.08)"] {
+  background: rgba(240,253,244,.88) !important;
+  border-color: rgba(22,163,74,.22) !important;
+}
+
+.lv-light-mode [style*="rgba(251,191,36,.10)"] {
+  background: rgba(254,249,195,.9) !important;
+  border-color: rgba(202,138,4,.24) !important;
+  color: #713f12 !important;
+}
+
+
+/* Lyvora v3.8.21 - Moderation Report System */
+.lv-light-mode [style*="rgba(239,68,68,.13)"] {
+  background: rgba(254,226,226,.9) !important;
+  border-color: rgba(220,38,38,.24) !important;
+  color: #7f1d1d !important;
+}
+
+.lv-light-mode [style*="reportModal"] {
+  background: rgba(255,255,255,.94) !important;
+}
+
+.lv-light-mode textarea {
+  color: #13071f !important;
+}
+
+
+/* Lyvora v3.8.22 - Localized Premium Splash */
+@keyframes lvSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lvHeartPulse {
+  0%,100% { transform: scale(1); opacity: .86; }
+  50% { transform: scale(1.16); opacity: 1; }
+}
+
+@media (max-width: 620px) {
+  [style*="letter-spacing: 18px"] {
+    letter-spacing: 10px !important;
+    padding-left: 10px !important;
+  }
+
+  [style*="grid-template-columns: repeat(4,minmax(0,1fr))"] {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  }
+
+  [style*="padding: 46px 42px 30px"] {
+    padding: 32px 20px 24px !important;
+    border-radius: 32px !important;
+  }
+}
+
 `;
 
 const s: Record<string, React.CSSProperties> = {
   page: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at 50% -10%,#312067 0%,#100b24 36%,#050612 100%)", color: "white", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: "24px 24px 140px" },
   appPage: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at 50% -10%,#312067 0%,#100b24 36%,#050612 100%)", color: "white", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: "16px 16px 140px" },
 
+
+  authGuardBox: {
+    border: "1px solid rgba(251,191,36,.28)",
+    background: "rgba(251,191,36,.10)",
+    color: "#fde68a",
+    borderRadius: 18,
+    padding: "12px 14px",
+    marginBottom: 16,
+    fontWeight: 850,
+    lineHeight: 1.45
+  },
+  accountSecurePanel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    border: "1px solid rgba(34,197,94,.22)",
+    background: "rgba(34,197,94,.08)",
+    borderRadius: 20,
+    padding: "12px 13px",
+    margin: "10px 0 12px"
+  },
+  chatSafetyRow: {
+    display: "flex",
+    gap: 8,
+    margin: "0 0 12px",
+    flexWrap: "wrap"
+  },
+  chatDangerButton: {
+    border: "1px solid rgba(239,68,68,.28)",
+    background: "rgba(239,68,68,.13)",
+    color: "#fecaca",
+    borderRadius: 999,
+    padding: "10px 12px",
+    cursor: "pointer",
+    fontWeight: 900
+  },
+  chatGhostButton: {
+    border: "1px solid rgba(255,255,255,.12)",
+    background: "rgba(255,255,255,.06)",
+    color: "white",
+    borderRadius: 999,
+    padding: "10px 12px",
+    cursor: "pointer",
+    fontWeight: 850
+  },
+  reportOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,.58)",
+    display: "grid",
+    placeItems: "center",
+    zIndex: 99,
+    padding: 18
+  },
+  reportModal: {
+    width: "min(430px,100%)",
+    borderRadius: 30,
+    border: "1px solid rgba(255,255,255,.13)",
+    background: "linear-gradient(180deg,rgba(20,12,40,.96),rgba(8,8,18,.96))",
+    padding: 24,
+    boxShadow: "0 30px 90px rgba(0,0,0,.46)",
+    backdropFilter: "blur(24px)"
+  },
+  reportTitle: {
+    color: "white",
+    margin: "0 0 8px",
+    fontSize: 24,
+    letterSpacing: -.5
+  },
+  reportText: {
+    color: "rgba(255,255,255,.66)",
+    margin: "0 0 14px",
+    lineHeight: 1.5,
+    fontSize: 14
+  },
+  reportInput: {
+    width: "100%",
+    minHeight: 120,
+    borderRadius: 18,
+    border: "1px solid rgba(255,255,255,.12)",
+    background: "rgba(255,255,255,.07)",
+    color: "white",
+    padding: 14,
+    resize: "none",
+    outline: "none",
+    boxSizing: "border-box",
+    fontFamily: "inherit"
+  },
+  reportActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 14,
+    flexWrap: "wrap"
+  },
   supportWrap: {
     position: "fixed",
     right: 18,
@@ -1984,10 +2347,145 @@ const s: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontWeight: 950
   },
-  splashPage: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at top,#312067 0%,#100b24 42%,#050612 100%)", color: "white", fontFamily: "Inter, Arial", display: "grid", placeItems: "center", padding: 22 },
-  splashCard: { position: "relative", zIndex: 2, width: "min(420px,92vw)", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.045))", borderRadius: 38, padding: 36, textAlign: "center", backdropFilter: "blur(28px)", boxShadow: "0 32px 120px rgba(0,0,0,.52)" },
-  splashLogo: { width: 108, height: 108, margin: "0 auto 18px", borderRadius: 34, display: "grid", placeItems: "center", fontSize: 60, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
-  splashTitle: { margin: 0, fontSize: 46, letterSpacing: -1.8, fontWeight: 950 },
+  splashPage: { minHeight: "100vh", position: "relative", overflow: "hidden", display: "grid", placeItems: "center", background: "radial-gradient(circle at 10% 0%,rgba(124,58,237,.46),transparent 30%),radial-gradient(circle at 95% 88%,rgba(236,72,153,.38),transparent 28%),linear-gradient(135deg,#070713 0%,#10081f 48%,#071021 100%)", color: "white", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: 24 },
+
+  splashGrid: {
+    position: "absolute",
+    inset: 0,
+    opacity: .34,
+    backgroundImage: "linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px)",
+    backgroundSize: "48px 48px",
+    pointerEvents: "none"
+  },
+  splashOrbOne: {
+    position: "absolute",
+    width: 520,
+    height: 520,
+    borderRadius: "50%",
+    top: -250,
+    left: -170,
+    background: "radial-gradient(circle,#7c3aed 0%,rgba(124,58,237,.4) 44%,transparent 72%)",
+    filter: "blur(2px)",
+    opacity: .78,
+    pointerEvents: "none"
+  },
+  splashOrbTwo: {
+    position: "absolute",
+    width: 520,
+    height: 520,
+    borderRadius: "50%",
+    right: -190,
+    bottom: -220,
+    background: "radial-gradient(circle,#ec4899 0%,rgba(236,72,153,.34) 46%,transparent 72%)",
+    opacity: .64,
+    pointerEvents: "none"
+  },
+  splashPremiumCard: {
+    width: "min(760px,calc(100vw - 34px))",
+    border: "1px solid rgba(255,255,255,.14)",
+    background: "linear-gradient(180deg,rgba(255,255,255,.095),rgba(255,255,255,.035))",
+    borderRadius: 40,
+    padding: "46px 42px 30px",
+    position: "relative",
+    zIndex: 2,
+    textAlign: "center",
+    backdropFilter: "blur(26px)",
+    boxShadow: "0 40px 140px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.10)"
+  },
+  splashLogoMark: {
+    display: "grid",
+    placeItems: "center",
+    marginBottom: 16,
+    filter: "drop-shadow(0 0 36px rgba(168,85,247,.48))"
+  },
+  splashWordmark: {
+    letterSpacing: 18,
+    paddingLeft: 18,
+    fontSize: 19,
+    fontWeight: 950,
+    color: "rgba(255,255,255,.9)",
+    marginBottom: 14
+  },
+  splashMiniLine: {
+    width: 150,
+    height: 4,
+    margin: "0 auto 28px",
+    borderRadius: 999,
+    background: "linear-gradient(90deg,transparent,#7c3aed,#ec4899,#22d3ee,transparent)",
+    boxShadow: "0 0 26px rgba(217,70,239,.45)"
+  },
+  splashWelcome: {
+    margin: "0 auto 20px",
+    maxWidth: 650,
+    color: "white",
+    fontSize: "clamp(28px,4vw,40px)",
+    lineHeight: 1.14,
+    letterSpacing: -1,
+    fontWeight: 950
+  },
+  splashSubline: {
+    margin: "0 auto",
+    maxWidth: 560,
+    color: "rgba(255,255,255,.68)",
+    lineHeight: 1.65,
+    fontSize: 17
+  },
+  splashHeart: {
+    margin: "26px auto 16px",
+    fontSize: 34,
+    filter: "drop-shadow(0 0 18px rgba(217,70,239,.75))",
+    animation: "lvHeartPulse 1.4s ease-in-out infinite"
+  },
+  splashSpinnerWrap: {
+    display: "grid",
+    placeItems: "center",
+    marginBottom: 14
+  },
+  splashSpinner: {
+    width: 58,
+    height: 58,
+    borderRadius: "50%",
+    border: "6px solid rgba(255,255,255,.09)",
+    borderTopColor: "#a855f7",
+    borderRightColor: "#d946ef",
+    animation: "lvSpin 1s linear infinite",
+    boxShadow: "0 0 34px rgba(168,85,247,.35)"
+  },
+  splashLoadingText: {
+    display: "block",
+    color: "white",
+    fontSize: 22,
+    marginBottom: 5
+  },
+  splashWaitText: {
+    display: "block",
+    color: "rgba(255,255,255,.58)",
+    fontSize: 15
+  },
+  splashDivider: {
+    height: 1,
+    width: "100%",
+    background: "linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)",
+    margin: "30px 0 20px"
+  },
+  splashBadges: {
+    display: "grid",
+    gridTemplateColumns: "repeat(4,minmax(0,1fr))",
+    gap: 10,
+    color: "rgba(255,255,255,.76)",
+    fontWeight: 850
+  },
+  splashCopyright: {
+    position: "absolute",
+    bottom: 24,
+    zIndex: 2,
+    color: "rgba(255,255,255,.42)",
+    fontWeight: 750
+  },
+
+  splashCard: { display: "none" },
+  splashLogo: { display: "none" },
+  splashTitle: { display: "none" },
   splashText: { margin: "10px 0 22px", color: "rgba(255,255,255,.62)", fontWeight: 800 },
   loadingTrack: { width: "100%", height: 10, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,.09)", border: "1px solid rgba(255,255,255,.1)" },
   loadingFill: { height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#7c3aed,#ec4899,#22d3ee)", boxShadow: "0 0 28px rgba(217,70,239,.55)", transition: "width .65s ease" },
