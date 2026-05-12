@@ -336,6 +336,29 @@ export default function App() {
   const [isPremium, setIsPremium] = useState(true);
   const [premiumGlow, setPremiumGlow] = useState(true);
 
+const MEMBERSHIP_PLANS = {
+  free: {
+    dailyMessages: 50,
+    voiceSeconds: 15,
+    profileViews: 5,
+    swipeBoost: false,
+    invisibleMode: false,
+    hdPhoto: false,
+    aiOpeners: 3
+  },
+  premium: {
+    dailyMessages: 9999,
+    voiceSeconds: 120,
+    profileViews: 999,
+    swipeBoost: true,
+    invisibleMode: true,
+    hdPhoto: true,
+    aiOpeners: 999
+  }
+};
+
+const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free;
+
   const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
 
   function scrollToSection(target: "features" | "pricing") {
