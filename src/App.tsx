@@ -31,6 +31,7 @@ type OnboardingSlide = { emoji: string; title: string; text: string; tag: string
 type MatchMetric = { label: string; value: number; icon: string };
 type ActivityItem = { icon: string; title: string; text: string; time: string };
 type DiscoverCard = { emoji: string; title: string; tag: string; match: number };
+type RegionProfile = { country: string; city: string; language: string; timezone: string; mode: "local" | "country" | "global" };
 type SupportMessage = { id: number; from: "user" | "support"; text: string; time: string };
 
 type BeforeInstallPromptEvent = Event & {
@@ -41,33 +42,33 @@ type BeforeInstallPromptEvent = Event & {
 const ONBOARDING: OnboardingSlide[] = [
   {
     emoji: "💜",
-    tag: "Mood based matching",
-    title: "Hislerine göre eşleş.",
-    text: "Lyvora, seçtiğin moda göre daha doğal ve gerçek sohbet hissi veren premium bir akış sunar."
+    tag: "Premium mood matching",
+    title: "Gerçek bağlar kur.",
+    text: "Lyvora, seçtiğin moda göre daha zarif, akıcı ve gerçek sohbet hissi veren premium bir deneyim sunar."
   },
   {
     emoji: "💬",
-    tag: "Live chat feeling",
-    title: "Canlı uygulama gibi akar.",
-    text: "Yazıyor efekti, canlı online görünümü, hızlı cevaplar ve yumuşak mesaj geçişleriyle gerçek app hissi."
+    tag: "Fluid live experience",
+    title: "Gerçek uygulama hissiyle akar.",
+    text: "Akıcı yazıyor efekti, canlı online hissi ve yumuşak mesaj geçişleriyle premium app deneyimi."
   },
   {
     emoji: "🚀",
-    tag: "Launch ready polish",
-    title: "Site + app hissi birleşti.",
-    text: "Landing tarafı premium site gibi, içerisi ise modern mobil uygulama gibi hissettirir."
+    tag: "Signature app polish",
+    title: "Launch-ready sosyal deneyim.",
+    text: "İlk ekrandan sohbet akışına kadar modern, temiz ve launch-ready bir mobil deneyim sunar."
   }
 ];
 
 const MOODS: Mood[] = [
-  { id: "bored", emoji: "🙂", title: "Sıkıldım", desc: "Kafa dağıtan yumuşak sohbet.", color: "#38bdf8" },
-  { id: "night", emoji: "🌙", title: "Gece modu", desc: "Loş, sakin ve derin konuşmalar.", color: "#818cf8" },
-  { id: "bond", emoji: "💜", title: "Gerçek bağ", desc: "Samimi ve anlayışlı eşleşme.", color: "#d946ef" },
-  { id: "game", emoji: "🎮", title: "Oyun modu", desc: "Mini oyun, soru ve eğlence.", color: "#22c55e" },
-  { id: "busy", emoji: "🧠", title: "Kafam dolu", desc: "Rahatlatan yavaş tempo sohbet.", color: "#f59e0b" },
-  { id: "sad", emoji: "🥺", title: "Üzgünüm", desc: "Nazik ve destekleyici konuşma.", color: "#60a5fa" },
-  { id: "happy", emoji: "😁", title: "Mutluyum", desc: "Enerjini paylaşabileceğin biri.", color: "#f472b6" },
-  { id: "random", emoji: "✨", title: "Rastgele", desc: "Sürpriz bir eşleşme başlat.", color: "#a78bfa" }
+  { id: "bored", emoji: "✦", title: "Sıkıldım", desc: "Kafa dağıtan yumuşak sohbet.", color: "#38bdf8" },
+  { id: "night", emoji: "☾", title: "Gece modu", desc: "Loş, sakin ve derin konuşmalar.", color: "#818cf8" },
+  { id: "bond", emoji: "◈", title: "Gerçek bağ", desc: "Samimi ve anlayışlı eşleşme.", color: "#d946ef" },
+  { id: "game", emoji: "⌘", title: "Oyun modu", desc: "Mini oyun, soru ve eğlence.", color: "#22c55e" },
+  { id: "busy", emoji: "◎", title: "Kafam dolu", desc: "Rahatlatan yavaş tempo sohbet.", color: "#f59e0b" },
+  { id: "sad", emoji: "◌", title: "Üzgünüm", desc: "Nazik ve destekleyici konuşma.", color: "#60a5fa" },
+  { id: "happy", emoji: "✺", title: "Mutluyum", desc: "Enerjini paylaşabileceğin biri.", color: "#f472b6" },
+  { id: "random", emoji: "✧", title: "Rastgele", desc: "Sürpriz bir eşleşme başlat.", color: "#a78bfa" }
 ];
 
 const PLANS: Plan[] = [
@@ -75,7 +76,6 @@ const PLANS: Plan[] = [
   { name: "Premium", price: "₺49", tag: "En popüler", highlight: true, features: ["1 aylık Premium erişim", "Sınırsız sohbet", "Öncelikli eşleşme", "Premium tema", "Yazıyor efekti"] },
   { name: "Ultra", price: "₺99", tag: "VIP", features: ["1 aylık Ultra erişim", "Özel mood odaları", "Favori kişiler", "Gelişmiş filtreler", "Ultra rozet"] }
 ];
-
 
 const TESTIMONIALS = [
   {
@@ -90,7 +90,7 @@ const TESTIMONIALS = [
   },
   {
     name: "Ege",
-    text: "Bir startup landing page’i ile mobil app birleşmiş gibi.",
+    text: "Bir premium sosyal ürün ile mobil app birleşmiş gibi.",
     tag: "Creator"
   }
 ];
@@ -116,7 +116,43 @@ const FINAL_POLISH_NOTES = [
   "Cinematic UI polish enabled"
 ];
 
-const AVATARS = ["🌙", "💜", "✨", "🔥", "🎧", "🎮", "🦋", "☁️"];
+const AVATARS = ["◈", "✦", "✧", "☾", "◎", "⌘", "✺", "◇"];
+
+const REGION_PRESETS = [
+  { country: "Türkiye", city: "İstanbul", language: "tr", timezone: "Europe/Istanbul" },
+  { country: "Türkiye", city: "Ankara", language: "tr", timezone: "Europe/Istanbul" },
+  { country: "Türkiye", city: "İzmir", language: "tr", timezone: "Europe/Istanbul" },
+  { country: "Germany", city: "Berlin", language: "de", timezone: "Europe/Berlin" },
+  { country: "France", city: "Paris", language: "fr", timezone: "Europe/Paris" },
+  { country: "United Kingdom", city: "London", language: "en", timezone: "Europe/London" },
+  { country: "United States", city: "New York", language: "en", timezone: "America/New_York" },
+  { country: "Global", city: "Worldwide", language: "en", timezone: "UTC" }
+];
+
+function detectRegionProfile(): RegionProfile {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const language = (typeof navigator !== "undefined" ? navigator.language : "en").split("-")[0] || "en";
+
+  const matchedPreset =
+    REGION_PRESETS.find((item) => item.timezone === timezone && item.language === language) ||
+    REGION_PRESETS.find((item) => item.timezone === timezone) ||
+    REGION_PRESETS.find((item) => item.language === language) ||
+    REGION_PRESETS[REGION_PRESETS.length - 1];
+
+  return {
+    country: matchedPreset.country,
+    city: matchedPreset.city,
+    language,
+    timezone,
+    mode: matchedPreset.country === "Global" ? "global" : "local"
+  };
+}
+
+function regionMatchLabel(region: RegionProfile) {
+  if (region.mode === "global") return "Global eşleşme";
+  if (region.mode === "country") return `${region.country} geneli`;
+  return `${region.city} yakın çevre`;
+}
 
 const USERNAME_MIN_LENGTH = 3;
 const USERNAME_MAX_LENGTH = 18;
@@ -186,7 +222,6 @@ function getSplashLocale() {
   return SPLASH_TRANSLATIONS[code] || SPLASH_TRANSLATIONS.en;
 }
 
-
 const ACTIVITY_FEED: ActivityItem[] = [
   { icon: "💜", title: "Yeni eşleşme", text: "Gece modu odasında biri seninle uyumlu.", time: "şimdi" },
   { icon: "🔥", title: "Profil ziyareti", text: "Bir kullanıcı premium profilini görüntüledi.", time: "2 dk" },
@@ -195,9 +230,9 @@ const ACTIVITY_FEED: ActivityItem[] = [
 ];
 
 const DISCOVER_CARDS: DiscoverCard[] = [
-  { emoji: "🌙", title: "Gece Sohbetçisi", tag: "Sakin tempo", match: 96 },
-  { emoji: "🎮", title: "Oyun Modu", tag: "Eğlenceli akış", match: 89 },
-  { emoji: "💜", title: "Derin Bağ", tag: "Samimi konuşma", match: 93 }
+  { emoji: "☾", title: "Gece Sohbetçisi", tag: "Sakin tempo", match: 96 },
+  { emoji: "⌘", title: "Oyun Modu", tag: "Eğlenceli akış", match: 89 },
+  { emoji: "◈", title: "Derin Bağ", tag: "Samimi konuşma", match: 93 }
 ];
 
 const MATCH_METRICS: MatchMetric[] = [
@@ -226,7 +261,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("home");
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
-  const [avatar, setAvatar] = useState("🌙");
+  const [avatar, setAvatar] = useState("◈");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
@@ -252,6 +287,8 @@ export default function App() {
   const [dynamicToast, setDynamicToast] = useState("✨ Yeni premium eşleşme bulundu");
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [profileVisitors, setProfileVisitors] = useState(24);
+  const [regionProfile, setRegionProfile] = useState<RegionProfile>(() => detectRegionProfile());
+  const [regionalMatchScore, setRegionalMatchScore] = useState(96);
   const [activityPulse, setActivityPulse] = useState(0);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -276,7 +313,6 @@ export default function App() {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
     section?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-
 
   useEffect(() => {
     audioRef.current?.pause();
@@ -365,7 +401,6 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-
   useEffect(() => {
     if (!activeRoomId || !user) return;
 
@@ -420,7 +455,6 @@ export default function App() {
     return () => unsubscribe();
   }, [activeRoomId, user]); // lv-firestore-chat-listener
 
-
   useEffect(() => {
     const ticker = window.setInterval(() => {
       setLiveOnlineCount((prev) => Math.max(900, prev + Math.floor(Math.random() * 17) - 8));
@@ -450,8 +484,6 @@ export default function App() {
     return () => window.clearInterval(pushTicker);
   }, []); // lv-push-system
 
-
-
   function requireSignedIn(actionText = "Bu işlem için giriş yapmalısın.") {
     if (user) return true;
 
@@ -478,6 +510,11 @@ export default function App() {
         premium: false,
         level: 1,
         xp: 0,
+        regionCountry: regionProfile.country,
+        regionCity: regionProfile.city,
+        regionLanguage: regionProfile.language,
+        regionTimezone: regionProfile.timezone,
+        regionMode: regionProfile.mode,
         lastSeen: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -507,6 +544,11 @@ export default function App() {
         moodEmoji: mood.emoji,
         status: "active",
         participants: user ? [user.uid] : [],
+        regionCountry: regionProfile.country,
+        regionCity: regionProfile.city,
+        regionLanguage: regionProfile.language,
+        regionTimezone: regionProfile.timezone,
+        regionMode: regionProfile.mode,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
@@ -679,6 +721,7 @@ export default function App() {
     const roomId = await createMoodRoom(mood);
     setActiveRoomId(roomId);
     setMatchingStep(0);
+    setRegionalMatchScore(regionProfile.mode === "local" ? 97 : regionProfile.mode === "country" ? 92 : 84);
     setScreen("match");
     window.setTimeout(() => setMatchingStep(1), 700);
     window.setTimeout(() => setMatchingStep(2), 1400);
@@ -725,8 +768,6 @@ export default function App() {
       setIsTyping(false);
       const replyText = pickReply();
       setMessages((prev) => [...prev, { id: Date.now() + 1, from: "bot", text: replyText, time: "Şimdi" }]);
-      // Bot cevapları demo/AI simülasyonu olarak local tutulur.
-      // Firestore sadece gerçek kullanıcı mesajlarını saklar; böylece snapshot eski mesajları silmez.
     }, 1000 + Math.floor(Math.random() * 600));
   }
 
@@ -748,7 +789,7 @@ export default function App() {
           <div style={s.onboardPhone} className="lv-float-soft">
             <div style={s.onboardTopLine}>
               <span style={s.liveTinyDot}></span>
-              Lyvora live preview
+              Lyvora live
             </div>
             <div style={s.onboardOrb}>{activeSlide.emoji}</div>
             <div style={s.onboardMiniCard}>
@@ -776,7 +817,7 @@ export default function App() {
                   else setScreen("landing");
                 }}
               >
-                {onboardingStep < ONBOARDING.length - 1 ? "Devam Et" : "Lyvora’ya Başla"}
+                {onboardingStep < ONBOARDING.length - 1 ? "Devam Et" : "Başla"}
               </button>
               <button style={s.secondaryButton} onClick={() => setScreen("landing")}>Atla</button>
             </div>
@@ -804,11 +845,11 @@ export default function App() {
         <section style={s.websiteHero} className="lv-website-hero">
           <div style={s.heroCopy} className="lv-rise lv-hero-copy">
             <div style={s.heroBadge}>💜 Anonim kal • Mood seç • Gerçek bağ kur</div>
-            <h1 style={s.heroTitle} className="lv-hero-title">Hissettiğin yerden başla,<br /><span style={s.gradientText}>doğru insanla eşleş.</span></h1>
-            <p style={s.heroText} className="lv-hero-text">Lyvora, site kalitesinde landing deneyimini iOS hissiyatlı mobil sohbet arayüzüyle birleştiren premium sosyal platformdur.</p>
+            <h1 style={s.heroTitle} className="lv-hero-title">Hissettiğin yerden başla,<br /><span style={s.gradientText}>premium bağlar kur.</span></h1>
+            <p style={s.heroText} className="lv-hero-text">Lyvora, iOS hissiyatlı arayüzü, akıcı mood eşleşmeleri ve akıcı sosyal deneyimi tek akışta birleştirir.</p>
             <div style={s.heroActions}>
-              <button style={s.primaryButton} onClick={() => setScreen("auth")}>Lyvora’ya Başla</button>
-              <button style={s.secondaryButton} onClick={() => setScreen("auth")}>Canlı Demo</button>
+              <button style={s.primaryButton} onClick={() => setScreen("auth")}>Başla</button>
+              <button style={s.secondaryButton} onClick={() => setScreen("auth")}>Önizleme</button>
             </div>
             <div style={s.heroStats}>
               <div><b>1.3K+</b><span> aktif kişi</span></div>
@@ -819,7 +860,7 @@ export default function App() {
 
           <div style={s.heroDevice} className="lv-float-soft lv-hero-device">
             <div style={s.deviceTop}>
-              <Brand sub="iOS preview" />
+              <Brand sub="iOS experience" />
               <span style={s.devicePill}>Live</span>
             </div>
             <div style={s.deviceMood}>🌙 Gece modu</div>
@@ -838,7 +879,7 @@ export default function App() {
         
         <section style={s.websiteShowcase}>
           <div style={s.showcaseHeader}>
-            <span style={s.goldBadge}>🚀 Startup showcase</span>
+            <span style={s.goldBadge}>🚀 Product showcase</span>
             <h2 style={s.panelTitle}>Gerçek uygulama hissi veren deneyim.</h2>
             <p style={s.panelText}>Landing tarafı premium startup sitesi, içerisi ise canlı sosyal uygulama gibi tasarlandı.</p>
           </div>
@@ -875,7 +916,7 @@ export default function App() {
         <section style={s.testimonialSection}>
           <div style={s.sectionHeader}>
             <b>Community feedback</b>
-            <span>early users</span>
+            <span>community</span>
           </div>
 
           <div style={s.testimonialGrid}>
@@ -917,16 +958,15 @@ export default function App() {
         </section>
 
         <section style={s.massiveCTA} className="lv-liquid-card">
-          <span style={s.goldBadge}>✨ Launch ready experience</span>
+          <span style={s.goldBadge}>✨ Ready experience</span>
           <h2 style={s.massiveTitle}>Gerçek bir startup gibi görün.</h2>
           <p style={s.massiveText}>Lyvora; modern SaaS landing page hissini premium sosyal uygulama deneyimiyle birleştirir.</p>
 
           <div style={s.heroActions}>
             <button style={s.primaryButton} onClick={() => setScreen("auth")}>Şimdi Başla</button>
-            <button style={s.secondaryButton}>Live Demo</button>
+            <button style={s.secondaryButton}>Önizleme</button>
           </div>
         </section>
-
 
         <div ref={pricingRef}>
           <PricingPanel />
@@ -934,13 +974,13 @@ export default function App() {
 
         <section style={s.siteCTA}>
           <div>
-            <span style={s.goldBadge}>👑 Launch ready</span>
+            <span style={s.goldBadge}>👑 Ready</span>
             <h2 style={s.panelTitle}>Site + app hissi aynı üründe.</h2>
             <p style={s.panelText}>Landing sayfası profesyonel, içerisi mobil uygulama gibi hissettirir.</p>
           </div>
           <div style={s.heroActions}>
             {!isInstalledApp && <button style={s.secondaryButton} onClick={installLyvoraApp}>📲 Telefona Kur</button>}
-            <button style={s.primaryButton} onClick={() => setScreen("auth")}>Demo’yu dene</button>
+            <button style={s.primaryButton} onClick={() => setScreen("auth")}>Önizleme’yu dene</button>
           </div>
         </section>
 
@@ -982,7 +1022,6 @@ export default function App() {
       </main>
     );
   }
-
 
   if (screen === "privacy") {
     return (
@@ -1085,6 +1124,7 @@ export default function App() {
           <div style={s.matchOrb}>{selectedMood?.emoji || "💜"}</div>
           <h1 style={s.matchTitle}>Eşleşme aranıyor</h1>
           <p style={s.matchText}>{stepTexts[matchingStep] || stepTexts[0]}...</p>
+          <p style={s.matchRegionText}>{regionMatchLabel(regionProfile)} • {regionProfile.timezone}</p>
           <div style={s.matchRings}>
             <div style={s.matchUser}>🌙</div>
             <div style={s.matchLine}></div>
@@ -1199,6 +1239,7 @@ export default function App() {
             <section style={s.storyRow}>{["+", "✨", "🌙", "🎧", "💜", "🔥"].map((item, i) => <div key={i} style={i === 0 ? s.storyAdd : s.story}>{item}</div>)}</section>
             <section style={s.discoverStrip}>{DISCOVER_CARDS.map((card) => <button key={card.title} className="lv-premium-depth" style={s.discoverCard} onClick={() => startChat(MOODS.find((m) => m.emoji === card.emoji) || MOODS[0])}><span>{card.emoji}</span><b>{card.title}</b><small>{card.tag} • %{card.match}</small></button>)}</section>
             <section style={s.activityFeedPanel}><div style={s.sectionHeader}><b>Live activity</b><span>{activityPulse} yeni sinyal</span></div>{ACTIVITY_FEED.slice(0,3).map((item) => <div key={item.title} style={s.activityItem}><span style={s.activityIcon}>{item.icon}</span><div><b>{item.title}</b><small>{item.text}</small></div><em>{item.time}</em></div>)}</section>
+            <RegionMatchPanel region={regionProfile} score={regionalMatchScore} onChange={(nextRegion) => { setRegionProfile(nextRegion); setRegionalMatchScore(nextRegion.mode === "local" ? 97 : nextRegion.mode === "country" ? 92 : 84); }} />
             <section style={s.moodGrid}>{MOODS.map((mood) => <button key={mood.id} className="lv-premium-depth" style={{ ...s.moodCard, borderColor: `${mood.color}44` }} onClick={() => startChat(mood)}><span style={s.moodIcon}>{mood.emoji}</span><b>{mood.title}</b><small>{mood.desc}</small></button>)}</section>
           </>
         )}
@@ -1217,7 +1258,7 @@ export default function App() {
         {activeTab === "premium" && (
           <>
             <PricingPanel />
-            <section style={s.bottomPanel}><b>👑 Premium ile sınırları kaldır</b><span>Özel mood odaları, favoriler ve uzun sohbet modu yakında.</span><button style={s.primaryFull}>Premium Demo Aç</button></section>
+            <section style={s.bottomPanel}><b>👑 Premium ile sınırları kaldır</b><span>Özel mood odaları, favoriler ve uzun sohbet modu yakında.</span><button style={s.primaryFull}>Premium Önizleme Aç</button></section>
           </>
         )}
 
@@ -1235,7 +1276,6 @@ export default function App() {
     </main>
   );
 }
-
 
 function LegalPage({
   title,
@@ -1269,7 +1309,6 @@ function LegalPage({
     </main>
   );
 }
-
 
 function SupportWidget({
   open,
@@ -1348,6 +1387,58 @@ function SupportWidget({
   );
 }
 
+function RegionMatchPanel({
+  region,
+  score,
+  onChange
+}: {
+  region: RegionProfile;
+  score: number;
+  onChange: (region: RegionProfile) => void;
+}) {
+  return (
+    <section style={s.regionPanel} className="lv-premium-depth">
+      <div style={s.regionTop}>
+        <div>
+          <b>Bölgesel eşleşme</b>
+          <span>{regionMatchLabel(region)} • {region.language.toUpperCase()}</span>
+        </div>
+        <strong>{score}%</strong>
+      </div>
+
+      <div style={s.regionChips}>
+        {(["local", "country", "global"] as RegionProfile["mode"][]).map((mode) => (
+          <button
+            key={mode}
+            style={region.mode === mode ? s.regionChipActive : s.regionChip}
+            onClick={() => onChange({ ...region, mode })}
+          >
+            {mode === "local" ? "Yakınım" : mode === "country" ? "Ülkem" : "Global"}
+          </button>
+        ))}
+      </div>
+
+      <select
+        style={s.regionSelect}
+        value={`${region.country}|${region.city}|${region.language}|${region.timezone}`}
+        onChange={(event) => {
+          const [country, city, language, timezone] = event.target.value.split("|");
+          onChange({ country, city, language, timezone, mode: country === "Global" ? "global" : region.mode });
+        }}
+      >
+        {REGION_PRESETS.map((item) => (
+          <option
+            key={`${item.country}-${item.city}`}
+            value={`${item.country}|${item.city}|${item.language}|${item.timezone}`}
+          >
+            {item.city}, {item.country}
+          </option>
+        ))}
+      </select>
+    </section>
+  );
+}
+
 function SplashScreen() {
   const splash = getSplashLocale();
 
@@ -1395,7 +1486,6 @@ function SplashScreen() {
     </main>
   );
 }
-
 
 function BottomNav({ active, onHome, onChat, onProfile, onPremium }: { active: Tab; onHome: () => void; onChat: () => void; onProfile: () => void; onPremium: () => void }) {
   return (
@@ -1514,7 +1604,6 @@ function TypingBubble() {
   );
 }
 
-
 function LyvoraLogo({ size = 52 }: { size?: number }) {
   return (
     <div style={{ ...s.lyvoraLogoWrap, width: size, height: size }}>
@@ -1587,7 +1676,6 @@ function Brand({ sub = "Mood based social app" }: { avatar?: string; sub?: strin
   );
 }
 
-
 function Feature({ icon, title, text }: { icon: string; title: string; text: string }) {
   return <div style={s.featureCard} className="lv-card"><div style={s.featureIcon}>{icon}</div><h3>{title}</h3><p>{text}</p></div>;
 }
@@ -1618,10 +1706,10 @@ const css = `
 .lv-premium-depth { transition: transform .24s cubic-bezier(.2,.8,.2,1), box-shadow .24s ease, border-color .24s ease !important; }
 .lv-premium-depth:hover { transform: translateY(-6px) scale(1.015) rotate(.25deg) !important; box-shadow: 0 26px 80px rgba(0,0,0,.32), 0 0 38px rgba(217,70,239,.16) !important; }
 .lv-floating-nav { animation: lvNavFloat 4.2s ease-in-out infinite; }
-[style*="grid-template-columns: repeat(3,1fr)"] > div { border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.065); border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 3px; text-align: center; }
+[style*="grid-template-columns: repeat(3,1fr)"] > div { border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.065); border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 3px; text-align: center; }
 [style*="grid-template-columns: repeat(3,1fr)"] > div b { font-size: 18px; }
 [style*="grid-template-columns: repeat(3,1fr)"] > div span { color: rgba(255,255,255,.58); font-size: 11px; font-weight: 800; }
-[style*="display: flex"][style*="flex-wrap: wrap"] > span { border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.065); color: rgba(255,255,255,.72); border-radius: 999px; padding: 8px 10px; font-size: 11px; font-weight: 900; }
+[style*="display: flex"][style*="flex-wrap: wrap"] > span { border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.065); color: rgba(255,255,255,.72); border-radius: 999px; padding: 8px 10px; font-size: 11px; font-weight: 900; }
 .lv-message { animation: lvMsg .3s ease both; }
 button { transition: transform .18s ease, filter .18s ease, background .18s ease; }
 button:hover { transform: translateY(-2px); filter: brightness(1.08); }
@@ -1729,7 +1817,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   color: rgba(18,8,32,.72) !important;
 }
 
-
 /* Lyvora v3.8.8 - Hard Light Contrast Fix */
 .lv-light-mode,
 .lv-light-mode * {
@@ -1808,7 +1895,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   color: #ffffff !important;
 }
 
-
 /* Lyvora v3.8.10 - Chat Snapshot + Light Bubble Fix */
 .lv-light-mode .lv-bot-message,
 .lv-light-mode .lv-system-message {
@@ -1827,7 +1913,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
 .lv-light-mode .lv-my-message * {
   color: #ffffff !important;
 }
-
 
 /* Lyvora v3.8.13 - Footer Visibility Fix */
 .lv-legal-footer {
@@ -1874,7 +1959,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   }
 }
 
-
 /* Lyvora v3.8.15 - Landing Micro Spacing Polish */
 .lv-dark-mode [style*="grid-template-columns: repeat(3,minmax(0,1fr))"] > div,
 .lv-light-mode [style*="grid-template-columns: repeat(3,minmax(0,1fr))"] > div {
@@ -1893,7 +1977,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
     grid-template-columns: 1fr !important;
   }
 }
-
 
 /* Lyvora v3.8.17 - Safe Mobile Responsive Fix */
 @media (max-width: 760px) {
@@ -2030,7 +2113,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   }
 }
 
-
 /* Lyvora v3.8.18 - Profile Crash + Mobile Fix */
 @media (max-width: 760px) {
   .lv-profile-panel {
@@ -2045,7 +2127,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
     max-width: 100% !important;
   }
 }
-
 
 /* Lyvora v3.8.19 - Live Support Widget */
 .lv-light-mode [style*="supportPanel"] {
@@ -2064,7 +2145,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   }
 }
 
-
 /* Lyvora v3.8.20 - Real User System Foundation */
 .lv-light-mode [style*="rgba(34,197,94,.08)"] {
   background: rgba(240,253,244,.88) !important;
@@ -2076,7 +2156,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
   border-color: rgba(202,138,4,.24) !important;
   color: #713f12 !important;
 }
-
 
 /* Lyvora v3.8.21 - Moderation Report System */
 .lv-light-mode [style*="rgba(239,68,68,.13)"] {
@@ -2092,7 +2171,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
 .lv-light-mode textarea {
   color: #13071f !important;
 }
-
 
 /* Lyvora v3.8.22 - Localized Premium Splash */
 @keyframes lvSpin {
@@ -2125,7 +2203,6 @@ input::placeholder { color: rgba(255,255,255,.42); }
 const s: Record<string, React.CSSProperties> = {
   page: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at 50% -10%,#312067 0%,#100b24 36%,#050612 100%)", color: "white", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: "24px 24px 140px" },
   appPage: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at 50% -10%,#312067 0%,#100b24 36%,#050612 100%)", color: "white", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: "16px 16px 140px" },
-
 
   authGuardBox: {
     border: "1px solid rgba(251,191,36,.28)",
@@ -2390,7 +2467,7 @@ const s: Record<string, React.CSSProperties> = {
     zIndex: 2,
     textAlign: "center",
     backdropFilter: "blur(26px)",
-    boxShadow: "0 40px 140px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.10)"
+    boxShadow: "0 40px 140px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.12)"
   },
   splashLogoMark: {
     display: "grid",
@@ -2522,14 +2599,14 @@ const s: Record<string, React.CSSProperties> = {
   primaryButton: { border: "none", borderRadius: 20, padding: "16px 22px", background: "linear-gradient(90deg,#7c3aed,#d946ef,#22d3ee)", color: "white", fontWeight: 950, cursor: "pointer", boxShadow: "0 18px 60px rgba(168,85,247,.35)" },
   secondaryButton: { border: "1px solid rgba(255,255,255,.14)", borderRadius: 20, padding: "16px 22px", background: "rgba(255,255,255,.07)", color: "white", fontWeight: 900, cursor: "pointer" },
   heroStats: { display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12, maxWidth: 520, marginTop: 28 },
-  heroDevice: { position: "relative", top: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.045))", borderRadius: 42, padding: 24, backdropFilter: "blur(26px)", boxShadow: "0 34px 120px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.10)" },
+  heroDevice: { position: "relative", top: 18, overflow: "hidden", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.045))", borderRadius: 42, padding: 24, backdropFilter: "blur(26px)", boxShadow: "0 34px 120px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.12)" },
   deviceTop: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 },
   devicePill: { padding: "8px 12px", borderRadius: 999, background: "rgba(34,197,94,.15)", color: "#86efac", border: "1px solid rgba(34,197,94,.25)", fontWeight: 900, fontSize: 12 },
   deviceMood: { display: "inline-flex", padding: "10px 14px", borderRadius: 999, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.1)", marginBottom: 18, fontWeight: 850 },
   previewBubble: { width: "fit-content", maxWidth: "82%", borderRadius: 22, padding: "13px 15px", background: "linear-gradient(135deg,#7c3aed,#d946ef)", boxShadow: "0 14px 35px rgba(168,85,247,.24)", marginBottom: 12 },
   previewInput: { marginTop: 18, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", color: "rgba(255,255,255,.52)", borderRadius: 999, padding: "14px 16px", display: "flex", justifyContent: "space-between" },
   websiteGrid: { position: "relative", zIndex: 2, maxWidth: 1120, margin: "34px auto", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 },
-  featureCard: { border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.045))", borderRadius: 30, padding: 26, backdropFilter: "blur(18px)", boxShadow: "0 20px 70px rgba(0,0,0,.25)" },
+  featureCard: { border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.045))", borderRadius: 30, padding: 26, backdropFilter: "blur(28px)", boxShadow: "0 20px 70px rgba(0,0,0,.25)" },
   featureIcon: { width: 60, height: 60, borderRadius: 21, display: "grid", placeItems: "center", fontSize: 30, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
   siteCTA: { position: "relative", zIndex: 2, maxWidth: 1120, margin: "22px auto 68px", border: "1px solid rgba(251,191,36,.28)", background: "linear-gradient(135deg,rgba(124,58,237,.22),rgba(236,72,153,.15))", borderRadius: 32, padding: 28, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 18, flexWrap: "wrap", boxShadow: "0 24px 80px rgba(0,0,0,.26)" },
   goldBadge: { display: "inline-flex", color: "#facc15", marginBottom: 8, fontWeight: 950 },
@@ -2606,18 +2683,53 @@ const s: Record<string, React.CSSProperties> = {
   story: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 25, background: "linear-gradient(135deg,#7c3aed,#ec4899)", border: "2px solid rgba(255,255,255,.18)", boxShadow: "0 12px 30px rgba(168,85,247,.23)" },
   storyAdd: { minWidth: 60, height: 60, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 30, background: "rgba(255,255,255,.06)", border: "2px dashed rgba(168,85,247,.5)", color: "#c084fc" },
   moodGrid: { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 13 },
-  moodCard: { minHeight: 138, border: "1px solid rgba(255,255,255,.13)", background: "linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.045))", color: "white", borderRadius: 26, padding: 16, textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 18px 60px rgba(0,0,0,.18)" },
-  moodIcon: { fontSize: 31 },
+  moodCard: {
+  position: "relative",
+  overflow: "hidden",
+  minHeight: 170,
+  borderRadius: 30,
+  padding: "22px 20px",
+  border: "1px solid rgba(255,255,255,.14)",
+  background:
+    "linear-gradient(145deg, rgba(255,255,255,.105), rgba(255,255,255,.035))",
+  backdropFilter: "blur(24px)",
+  WebkitBackdropFilter: "blur(24px)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 12,
+  cursor: "pointer",
+  transition: "transform .25s ease, box-shadow .25s ease, border-color .25s ease",
+  boxShadow:
+    "0 40px 110px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.09)"
+},
+  moodIcon: {
+  width: 62,
+  height: 62,
+  borderRadius: 22,
+  display: "grid",
+  placeItems: "center",
+  fontSize: 34,
+  fontWeight: 950,
+  color: "#ffffff",
+  background:
+    "radial-gradient(circle at 30% 18%, rgba(255,255,255,.22), rgba(168,85,247,.18) 35%, rgba(34,211,238,.12) 100%)",
+  border: "1px solid rgba(255,255,255,.14)",
+  textShadow: "0 0 18px rgba(168,85,247,.85)",
+  boxShadow:
+    "0 12px 34px rgba(0,0,0,.28), 0 0 24px rgba(168,85,247,.22), inset 0 1px 0 rgba(255,255,255,.12)"
+},
   emptyTab: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 28, padding: 22, textAlign: "center" },
-  emptyIcon: { width: 74, height: 74, borderRadius: 24, display: "grid", placeItems: "center", margin: "0 auto 14px", fontSize: 36, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
-  bottomPanel: { marginTop: 18, border: "1px solid rgba(251,191,36,.32)", background: "linear-gradient(135deg,rgba(124,58,237,.2),rgba(236,72,153,.14))", borderRadius: 26, padding: 18, display: "flex", flexDirection: "column", gap: 8 },
+  emptyIcon: { width: 74, height: 74, borderRadius: 28, display: "grid", placeItems: "center", margin: "0 auto 14px", fontSize: 36, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
+  bottomPanel: { marginTop: 18, border: "1px solid rgba(251,191,36,.32)", background: "linear-gradient(135deg,rgba(124,58,237,.2),rgba(236,72,153,.14))", borderRadius: 30, padding: 18, display: "flex", flexDirection: "column", gap: 8 },
   chatHeader: { display: "flex", alignItems: "center", gap: 12, paddingBottom: 18, borderBottom: "1px solid rgba(255,255,255,.1)" },
   roundButton: { width: 42, height: 42, borderRadius: "50%", border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.08)", color: "white", cursor: "pointer", fontSize: 26 },
   matchAvatar: { width: 56, height: 56, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 27, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
   chatTitle: { margin: 0, fontSize: 22, letterSpacing: -0.4 },
   chatSub: { margin: "4px 0 0", color: "#86efac", fontSize: 13 },
   endButton: { border: "1px solid rgba(248,113,113,.3)", background: "rgba(248,113,113,.15)", color: "#fecaca", borderRadius: 999, padding: "10px 12px", cursor: "pointer", fontWeight: 900 },
-  chatInfo: { margin: "18px 0", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 24, padding: 16, display: "flex", flexDirection: "column", gap: 6 },
+  chatInfo: { margin: "18px 0", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 28, padding: 16, display: "flex", flexDirection: "column", gap: 6 },
   messages: { height: "calc(100vh - 330px)", minHeight: 330, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingRight: 4 },
   message: { maxWidth: "82%", borderRadius: 22, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 4, lineHeight: 1.45 },
   myMessage: { alignSelf: "flex-end", background: "linear-gradient(135deg,#7c3aed,#d946ef)", boxShadow: "0 14px 35px rgba(168,85,247,.24)" },
@@ -2629,7 +2741,7 @@ const s: Record<string, React.CSSProperties> = {
   quickButton: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.08)", color: "white", borderRadius: 999, padding: "9px 12px", cursor: "pointer", whiteSpace: "nowrap", fontWeight: 800 },
   inputArea: { display: "flex", alignItems: "center", gap: 10, borderTop: "1px solid rgba(255,255,255,.1)", paddingTop: 14 },
   messageInput: { flex: 1, border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.07)", color: "white", borderRadius: 999, padding: "13px 15px", outline: "none", fontSize: 15 },
-  bottomNav: { position: "sticky", bottom: 8, marginTop: 14, border: "1px solid rgba(255,255,255,.16)", background: "linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07))", borderRadius: 30, padding: 8, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, backdropFilter: "blur(28px)", boxShadow: "0 22px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.10)", overflow: "hidden" },
+  bottomNav: { position: "sticky", bottom: 8, marginTop: 14, border: "1px solid rgba(255,255,255,.16)", background: "linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.07))", borderRadius: 30, padding: 8, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, backdropFilter: "blur(28px)", boxShadow: "0 22px 70px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.12)", overflow: "hidden" },
   navItem: { border: "none", background: "transparent", color: "rgba(255,255,255,.58)", borderRadius: 19, padding: "10px 6px", cursor: "pointer", fontWeight: 900, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 },
   navItemActive: { border: "1px solid rgba(217,70,239,.35)", background: "linear-gradient(135deg,rgba(124,58,237,.34),rgba(236,72,153,.22))", color: "white", borderRadius: 19, padding: "10px 6px", cursor: "pointer", fontWeight: 950, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, boxShadow: "0 12px 35px rgba(168,85,247,.18)" },
   matchScreen: { position: "relative", zIndex: 2, maxWidth: 560, minHeight: "calc(100vh - 32px)", margin: "0 auto", border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg,rgba(124,58,237,.22),rgba(236,72,153,.10))", borderRadius: 38, padding: 28, backdropFilter: "blur(24px)", boxShadow: "0 30px 100px rgba(0,0,0,.45)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", overflow: "hidden" },
@@ -2637,12 +2749,12 @@ const s: Record<string, React.CSSProperties> = {
   matchTitle: { margin: 0, fontSize: 38, letterSpacing: -1.2 },
   matchText: { margin: "12px 0 26px", color: "rgba(255,255,255,.72)", fontWeight: 800 },
   matchRings: { display: "flex", alignItems: "center", gap: 12, marginBottom: 26 },
-  matchUser: { width: 62, height: 62, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 30, background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.15)", boxShadow: "0 0 35px rgba(168,85,247,.22)" },
+  matchUser: { width: 62, height: 62, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 30, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.15)", boxShadow: "0 0 35px rgba(168,85,247,.22)" },
   matchLine: { width: 90, height: 4, borderRadius: 999, background: "linear-gradient(90deg,#7c3aed,#22d3ee,#ec4899)" },
-  loadingBar: { width: "82%", height: 12, borderRadius: 999, background: "rgba(255,255,255,.10)", overflow: "hidden", marginBottom: 22, border: "1px solid rgba(255,255,255,.12)" },
+  loadingBar: { width: "82%", height: 12, borderRadius: 999, background: "rgba(255,255,255,.12)", overflow: "hidden", marginBottom: 22, border: "1px solid rgba(255,255,255,.12)" },
   profilePanel: { marginTop: 4, border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(135deg,rgba(124,58,237,.18),rgba(236,72,153,.12))", borderRadius: 28, padding: 18, boxShadow: "0 20px 60px rgba(0,0,0,.22)" },
   profileTop: { display: "flex", alignItems: "center", gap: 14, marginBottom: 16 },
-  profileAvatar: { width: 76, height: 76, borderRadius: 26, display: "grid", placeItems: "center", fontSize: 39, background: "linear-gradient(135deg,#7c3aed,#ec4899)", boxShadow: "0 0 40px rgba(217,70,239,.28)" },
+  profileAvatar: { width: 76, height: 76, borderRadius: 30, display: "grid", placeItems: "center", fontSize: 39, background: "linear-gradient(135deg,#7c3aed,#ec4899)", boxShadow: "0 0 40px rgba(217,70,239,.28)" },
   profileName: { margin: 0, fontSize: 27, letterSpacing: -0.8 },
   profileMail: { margin: "4px 0 0", color: "rgba(255,255,255,.62)", fontSize: 13 },
   profileStats: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 14 },
@@ -2659,16 +2771,16 @@ const s: Record<string, React.CSSProperties> = {
   showcaseBottom: { color: "rgba(255,255,255,.52)", fontSize: 13, marginTop: 8 },
   showcaseContent: { display: "grid", gap: 16 },
   howGrid: { display: "grid", gap: 14 },
-  howCard: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.06)", borderRadius: 26, padding: 18, display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 18px 50px rgba(0,0,0,.16)" },
+  howCard: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.06)", borderRadius: 30, padding: 18, display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 18px 50px rgba(0,0,0,.16)" },
   testimonialSection: { position: "relative", zIndex: 2, maxWidth: 1120, margin: "0 auto 32px" },
   testimonialGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 16, marginTop: 14 },
-  testimonialCard: { border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.045))", borderRadius: 28, padding: 20, display: "flex", flexDirection: "column", gap: 10, backdropFilter: "blur(18px)" },
+  testimonialCard: { border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.045))", borderRadius: 28, padding: 20, display: "flex", flexDirection: "column", gap: 10, backdropFilter: "blur(28px)" },
   testimonialAvatar: { width: 54, height: 54, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#ec4899)", fontWeight: 950, fontSize: 20 },
   testimonialText: { color: "rgba(255,255,255,.72)", lineHeight: 1.7, margin: 0 },
   faqSection: { position: "relative", zIndex: 2, maxWidth: 1120, margin: "0 auto 32px" },
   faqList: { display: "grid", gap: 12, marginTop: 14 },
-  faqItem: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.06)", color: "white", borderRadius: 24, padding: 18, textAlign: "left", cursor: "pointer" },
-  faqItemActive: { border: "1px solid rgba(217,70,239,.42)", background: "linear-gradient(135deg,rgba(124,58,237,.24),rgba(236,72,153,.12))", color: "white", borderRadius: 24, padding: 18, textAlign: "left", cursor: "pointer", boxShadow: "0 20px 60px rgba(168,85,247,.18)" },
+  faqItem: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.06)", color: "white", borderRadius: 28, padding: 18, textAlign: "left", cursor: "pointer" },
+  faqItemActive: { border: "1px solid rgba(217,70,239,.42)", background: "linear-gradient(135deg,rgba(124,58,237,.24),rgba(236,72,153,.12))", color: "white", borderRadius: 28, padding: 18, textAlign: "left", cursor: "pointer", boxShadow: "0 20px 60px rgba(168,85,247,.18)" },
   faqTop: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 },
   faqText: { margin: "12px 0 0", color: "rgba(255,255,255,.72)", lineHeight: 1.7 },
   massiveCTA: { position: "relative", zIndex: 2, maxWidth: 1120, margin: "0 auto 64px", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(135deg,rgba(124,58,237,.26),rgba(236,72,153,.18))", borderRadius: 38, padding: 34, textAlign: "center", boxShadow: "0 30px 120px rgba(0,0,0,.32)" },
@@ -2679,8 +2791,8 @@ const s: Record<string, React.CSSProperties> = {
   priceBadge: { display: "inline-flex", padding: "8px 12px", borderRadius: 999, background: "rgba(251,191,36,.14)", border: "1px solid rgba(251,191,36,.28)", color: "#fde68a", fontWeight: 950, fontSize: 12 },
   priceTitle: { margin: 0, fontSize: 24, letterSpacing: -0.8 },
   priceGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 10 },
-  priceCard: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 24, padding: 14, display: "flex", flexDirection: "column", gap: 8 },
-  priceCardHot: { border: "1px solid rgba(217,70,239,.55)", background: "linear-gradient(135deg,rgba(124,58,237,.32),rgba(236,72,153,.24))", borderRadius: 24, padding: 14, display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 0 35px rgba(217,70,239,.22)" },
+  priceCard: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 28, padding: 14, display: "flex", flexDirection: "column", gap: 8 },
+  priceCardHot: { border: "1px solid rgba(217,70,239,.55)", background: "linear-gradient(135deg,rgba(124,58,237,.32),rgba(236,72,153,.24))", borderRadius: 28, padding: 14, display: "flex", flexDirection: "column", gap: 8, boxShadow: "0 0 35px rgba(217,70,239,.22)" },
   planTag: { color: "#f0abfc", fontSize: 11, fontWeight: 950 },
   planName: { margin: 0, fontSize: 18 },
   planPrice: { fontSize: 24, fontWeight: 950, letterSpacing: -0.6 },
@@ -2704,27 +2816,36 @@ const s: Record<string, React.CSSProperties> = {
   appPageLight: { minHeight: "100vh", position: "relative", overflow: "hidden", background: "radial-gradient(circle at 9% 0%,rgba(168,85,247,.34),transparent 28%),radial-gradient(circle at 87% 72%,rgba(34,211,238,.28),transparent 34%),linear-gradient(180deg,#fbf7ff 0%,#f3ebff 44%,#eaf8ff 100%)", color: "#13071f", fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Arial", padding: 16 },
   bgGlowLightOne: { position: "fixed", top: -190, left: -150, width: 470, height: 470, borderRadius: "50%", background: "#c084fc", filter: "blur(105px)", opacity: 0.42, pointerEvents: "none", animation: "lvAuroraShift 10s ease-in-out infinite" },
   bgGlowLightTwo: { position: "fixed", bottom: -180, right: -140, width: 540, height: 540, borderRadius: "50%", background: "#22d3ee", filter: "blur(125px)", opacity: 0.34, pointerEvents: "none", animation: "lvAuroraShift 11s ease-in-out infinite" },
-  themeToggle: { position: "fixed", top: 22, right: 22, zIndex: 10, width: 54, height: 54, borderRadius: "50%", border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.12)", color: "white", cursor: "pointer", fontSize: 22, backdropFilter: "blur(18px)", boxShadow: "0 18px 55px rgba(0,0,0,.22)" },
+  themeToggle: { position: "fixed", top: 22, right: 22, zIndex: 10, width: 54, height: 54, borderRadius: "50%", border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.12)", color: "white", cursor: "pointer", fontSize: 22, backdropFilter: "blur(28px)", boxShadow: "0 18px 55px rgba(0,0,0,.22)" },
   themeMiniButton: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.075)", color: "white", borderRadius: 999, padding: "11px 14px", cursor: "pointer", fontWeight: 900, backdropFilter: "blur(16px)" },
-  onboardShell: { position: "relative", zIndex: 2, maxWidth: 1100, minHeight: "calc(100vh - 48px)", margin: "0 auto", display: "grid", gridTemplateColumns: "0.88fr 1.12fr", gap: 30, alignItems: "center" },
-  onboardPhone: { position: "relative", minHeight: 560, border: "1px solid rgba(255,255,255,.16)", background: "linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.055))", borderRadius: 46, padding: 26, backdropFilter: "blur(28px)", boxShadow: "0 34px 130px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.12)", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 },
+  onboardShell: {
+  position: "relative",
+  overflow: "hidden",
+ position: "relative", zIndex: 2, maxWidth: 1100, minHeight: "calc(100vh - 48px)", margin: "0 auto", display: "grid", gridTemplateColumns: "0.88fr 1.12fr", gap: 30, alignItems: "center" },
+  onboardPhone: {
+  position: "relative",
+  overflow: "hidden",
+ position: "relative", minHeight: 560, border: "1px solid rgba(255,255,255,.16)", background: "linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.055))", borderRadius: 46, padding: 26, backdropFilter: "blur(28px)", boxShadow: "0 34px 130px rgba(0,0,0,.46), inset 0 1px 0 rgba(255,255,255,.12)", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 },
   onboardTopLine: { position: "absolute", top: 24, left: 24, right: 24, display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,.68)", fontWeight: 900, fontSize: 13 },
   liveTinyDot: { width: 10, height: 10, borderRadius: 99, background: "#22c55e", display: "inline-block", animation: "lvOnlinePulse 1.6s ease-in-out infinite" },
   onboardOrb: { width: 142, height: 142, borderRadius: 44, display: "grid", placeItems: "center", margin: "0 auto 6px", fontSize: 72, background: "linear-gradient(135deg,#7c3aed,#ec4899,#22d3ee)", boxShadow: "0 0 90px rgba(217,70,239,.48)" },
-  onboardMiniCard: { border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.08)", borderRadius: 28, padding: 18, display: "flex", flexDirection: "column", gap: 8, color: "rgba(255,255,255,.72)", lineHeight: 1.55 },
-  onboardMessageOne: { alignSelf: "flex-start", maxWidth: "82%", borderRadius: 22, padding: "13px 15px", background: "rgba(255,255,255,.10)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.78)" },
+  onboardMiniCard: {
+  position: "relative",
+ border: "1px solid rgba(255,255,255,.14)", background: "rgba(255,255,255,.08)", borderRadius: 28, padding: 18, display: "flex", flexDirection: "column", gap: 8, color: "rgba(255,255,255,.72)", lineHeight: 1.55 },
+  onboardMessageOne: { alignSelf: "flex-start", maxWidth: "82%", borderRadius: 22, padding: "13px 15px", background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.12)", color: "rgba(255,255,255,.78)" },
   onboardMessageTwo: { alignSelf: "flex-end", maxWidth: "82%", borderRadius: 22, padding: "13px 15px", background: "linear-gradient(135deg,#7c3aed,#d946ef)", color: "white", boxShadow: "0 14px 35px rgba(168,85,247,.24)" },
   onboardCopy: { minWidth: 0 },
-  onboardTitle: { margin: 0, fontSize: "clamp(48px,7vw,82px)", lineHeight: .96, letterSpacing: -3, fontWeight: 950 },
-  onboardText: { maxWidth: 620, margin: "22px 0 26px", color: "rgba(255,255,255,.72)", fontSize: 18, lineHeight: 1.75 },
+  onboardTitle: {
+  letterSpacing: "-1.2px",
+ margin: 0, fontSize: "clamp(48px,7vw,82px)", lineHeight: .96, letterSpacing: -3, fontWeight: 950 },
+  onboardText: {
+  lineHeight: 1.7,
+ maxWidth: 620, margin: "22px 0 26px", color: "rgba(255,255,255,.72)", fontSize: 18, lineHeight: 1.75 },
   onboardDots: { display: "flex", gap: 10, marginBottom: 26 },
   onboardDot: { width: 13, height: 13, borderRadius: 99, border: "none", background: "rgba(255,255,255,.26)", cursor: "pointer" },
   onboardDotActive: { width: 42, height: 13, borderRadius: 99, border: "none", background: "linear-gradient(90deg,#7c3aed,#ec4899,#22d3ee)", cursor: "pointer", boxShadow: "0 0 24px rgba(217,70,239,.38)" },
 
-
-
-
-  cinematicHeroCard: { position: "relative", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(135deg,rgba(255,255,255,.115),rgba(255,255,255,.045))", borderRadius: 34, padding: 20, marginBottom: 18, boxShadow: "0 28px 90px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.10)", backdropFilter: "blur(24px)" },
+  cinematicHeroCard: { position: "relative", border: "1px solid rgba(255,255,255,.14)", background: "linear-gradient(135deg,rgba(255,255,255,.115),rgba(255,255,255,.045))", borderRadius: 34, padding: 20, marginBottom: 18, boxShadow: "0 28px 90px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.12)", backdropFilter: "blur(24px)" },
   heroTopRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18 },
   heroLiveChip: { display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid rgba(34,197,94,.24)", background: "rgba(34,197,94,.12)", color: "#bbf7d0", borderRadius: 999, padding: "8px 12px", fontWeight: 950, fontSize: 12 },
   polishNotes: { display: "flex", flexWrap: "wrap", gap: 8, marginTop: 18 },
@@ -2734,16 +2855,16 @@ const s: Record<string, React.CSSProperties> = {
   newMatchOrb: { width: 54, height: 54, borderRadius: 20, display: "grid", placeItems: "center", fontSize: 28, background: "rgba(255,255,255,.18)" },
   modalButton: { border: "none", borderRadius: 999, padding: "10px 12px", background: "white", color: "#7c3aed", fontWeight: 950, cursor: "pointer" },
   discoverStrip: { display: "flex", gap: 12, overflowX: "auto", paddingBottom: 12, marginBottom: 16 },
-  discoverCard: { minWidth: 170, border: "1px solid rgba(255,255,255,.13)", background: "linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.045))", color: "white", borderRadius: 24, padding: 14, display: "flex", flexDirection: "column", gap: 6, textAlign: "left", cursor: "pointer", animation: "lvCardSwipe .5s ease both", boxShadow: "0 18px 55px rgba(0,0,0,.18)" },
-  activityFeedPanel: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 26, padding: 14, marginBottom: 16, display: "grid", gap: 10, backdropFilter: "blur(18px)" },
+  discoverCard: { minWidth: 170, border: "1px solid rgba(255,255,255,.13)", background: "linear-gradient(135deg,rgba(255,255,255,.12),rgba(255,255,255,.045))", color: "white", borderRadius: 28, padding: 14, display: "flex", flexDirection: "column", gap: 6, textAlign: "left", cursor: "pointer", animation: "lvCardSwipe .5s ease both", boxShadow: "0 18px 55px rgba(0,0,0,.18)" },
+  activityFeedPanel: { border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.07)", borderRadius: 30, padding: 14, marginBottom: 16, display: "grid", gap: 10, backdropFilter: "blur(28px)" },
   sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", color: "rgba(255,255,255,.72)", marginBottom: 2 },
   activityItem: { display: "grid", gridTemplateColumns: "42px 1fr auto", alignItems: "center", gap: 10, border: "1px solid rgba(255,255,255,.08)", background: "rgba(255,255,255,.045)", borderRadius: 18, padding: 10 },
   activityIcon: { width: 42, height: 42, borderRadius: 16, display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
-  settingsGlassPanel: { marginTop: 14, border: "1px solid rgba(255,255,255,.10)", background: "rgba(255,255,255,.06)", borderRadius: 22, padding: 14, display: "flex", flexDirection: "column", gap: 6, color: "rgba(255,255,255,.68)" },
+  settingsGlassPanel: { marginTop: 14, border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.06)", borderRadius: 22, padding: 14, display: "flex", flexDirection: "column", gap: 6, color: "rgba(255,255,255,.68)" },
 
   installBanner: { width: "100%", border: "1px solid rgba(34,211,238,.24)", background: "linear-gradient(90deg,rgba(124,58,237,.2),rgba(34,211,238,.14))", color: "white", borderRadius: 22, padding: "13px 14px", cursor: "pointer", fontWeight: 950, margin: "10px 0 12px", boxShadow: "0 16px 45px rgba(34,211,238,.12)" },
   firebaseCorePanel: { marginBottom: 14, border: "1px solid rgba(34,197,94,.24)", background: "linear-gradient(135deg,rgba(34,197,94,.13),rgba(34,211,238,.08))", borderRadius: 22, padding: "12px 14px", display: "flex", alignItems: "center", gap: 9, color: "#bbf7d0", fontSize: 12, fontWeight: 900 },
-  musicWidget: { marginBottom: 16, border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(135deg,rgba(124,58,237,.24),rgba(236,72,153,.14))", borderRadius: 24, padding: 14, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 20px 60px rgba(168,85,247,.18)", animation: "lvGlowBorder 4s ease-in-out infinite" },
+  musicWidget: { marginBottom: 16, border: "1px solid rgba(255,255,255,.12)", background: "linear-gradient(135deg,rgba(124,58,237,.24),rgba(236,72,153,.14))", borderRadius: 28, padding: 14, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 20px 60px rgba(168,85,247,.18)", animation: "lvGlowBorder 4s ease-in-out infinite" },
   musicDisc: { width: 54, height: 54, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: 24, background: "linear-gradient(135deg,#7c3aed,#ec4899)" },
   musicBars: { marginLeft: "auto", display: "flex", alignItems: "flex-end", gap: 4 },
   verifiedBadge: { display: "inline-flex", width: 24, height: 24, borderRadius: "50%", alignItems: "center", justifyContent: "center", background: "#3b82f6", color: "white", fontSize: 12, marginLeft: 8, verticalAlign: "middle" },
@@ -2752,10 +2873,8 @@ const s: Record<string, React.CSSProperties> = {
   levelTrack: { width: "100%", height: 10, borderRadius: 999, overflow: "hidden", background: "rgba(255,255,255,.08)", marginBottom: 16 },
   levelFill: { height: "100%", borderRadius: 999, background: "linear-gradient(90deg,#7c3aed,#ec4899,#22d3ee)" },
   typingTopBar: { marginBottom: 10, color: "#c4b5fd", fontSize: 11, fontWeight: 900, letterSpacing: 1.1, textTransform: "uppercase" },
-  matchAlgorithmCard: { width: "82%", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.075)", borderRadius: 24, padding: 14, display: "grid", gap: 10, marginBottom: 20, backdropFilter: "blur(18px)" },
+  matchAlgorithmCard: { width: "82%", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.075)", borderRadius: 28, padding: 14, display: "grid", gap: 10, marginBottom: 20, backdropFilter: "blur(28px)" },
   matchMetricRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "rgba(255,255,255,.78)", fontWeight: 850 },
   chatPresenceStrip: { margin: "-4px 0 14px", border: "1px solid rgba(34,197,94,.22)", background: "rgba(34,197,94,.10)", color: "#bbf7d0", borderRadius: 999, padding: "10px 13px", display: "flex", alignItems: "center", gap: 9, fontSize: 12, fontWeight: 900 },
   sendButton: { width: 44, height: 44, border: "none", background: "linear-gradient(135deg,#7c3aed,#d946ef)", color: "white", borderRadius: 16, cursor: "pointer", fontWeight: 900, fontSize: 17 }
 };
-
-/* Lyvora ultra premium additions */
