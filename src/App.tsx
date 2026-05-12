@@ -222,6 +222,25 @@ function getSplashLocale() {
   return SPLASH_TRANSLATIONS[code] || SPLASH_TRANSLATIONS.en;
 }
 
+function readSavedState<T>(key: string, fallback: T): T {
+  try {
+    if (typeof window === "undefined") return fallback;
+    const saved = window.localStorage.getItem(key);
+    return saved ? (JSON.parse(saved) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveState<T>(key: string, value: T) {
+  try {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // localStorage kullanılamazsa uygulama normal çalışmaya devam eder.
+  }
+}
+
 const ACTIVITY_FEED: ActivityItem[] = [
   { icon: "💜", title: "Yeni eşleşme", text: "Gece modu odasında biri seninle uyumlu.", time: "şimdi" },
   { icon: "🔥", title: "Profil ziyareti", text: "Bir kullanıcı premium profilini görüntüledi.", time: "2 dk" },
@@ -256,23 +275,23 @@ const RADIO_TRACKS = [
 ];
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>("onboarding");
+  const [screen, setScreen] = useState<Screen>(() => readSavedState<Screen>("lyvora_screen", "onboarding"));
   const [authMode, setAuthMode] = useState<AuthMode>("login");
-  const [activeTab, setActiveTab] = useState<Tab>("home");
+  const [activeTab, setActiveTab] = useState<Tab>(() => readSavedState<Tab>("lyvora_active_tab", "home"));
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState("◈");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
+  const [selectedMood, setSelectedMood] = useState<Mood | null>(() => readSavedState<Mood | null>("lyvora_selected_mood", null));
   const [activeRoomId, setActiveRoomId] = useState("demo-room");
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState("");
   const [toast, setToast] = useState("Yeni eşleşmeler hazır 💜");
   const [loading, setLoading] = useState(false);
   const [bootLoading, setBootLoading] = useState(true);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [theme, setTheme] = useState<"dark" | "light">(() => readSavedState<"dark" | "light">("lyvora_theme", "dark"));
+  const [onboardingStep, setOnboardingStep] = useState(() => readSavedState<number>("lyvora_onboarding_step", 0));
   const [matchingStep, setMatchingStep] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -345,6 +364,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    saveState("lyvora_screen", screen);
+  }, [screen]);
+
+  useEffect(() => {
+    saveState("lyvora_active_tab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    saveState("lyvora_theme", theme);
+  }, [theme]);
+
+  useEffect(() => {
+    saveState("lyvora_onboarding_step", onboardingStep);
+  }, [onboardingStep]);
+
+  useEffect(() => {
+    saveState("lyvora_selected_mood", selectedMood);
+  }, [selectedMood]);
+
+  useEffect(() => {
     const standalone =
       window.matchMedia?.("(display-mode: standalone)").matches ||
       (window.navigator as any).standalone === true;
@@ -394,7 +433,7 @@ export default function App() {
       setUser(currentUser);
       if (currentUser) {
         upsertUserProfile(currentUser);
-        if (screen !== "onboarding") setScreen("home");
+        if (screen === "auth" || screen === "landing") setScreen("home");
       }
     });
     return () => unsub();
@@ -725,6 +764,11 @@ export default function App() {
     setEmail("");
     setPassword("");
     setSelectedMood(null);
+    try {
+      window.localStorage.removeItem("lyvora_screen");
+      window.localStorage.removeItem("lyvora_active_tab");
+      window.localStorage.removeItem("lyvora_selected_mood");
+    } catch {}
     setScreen("landing");
   }
 
