@@ -281,6 +281,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState("◈");
+  const [profilePhoto, setProfilePhoto] = useState<string>(() => readSavedState<string>("lyvora_profile_photo", ""));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedMood, setSelectedMood] = useState<Mood | null>(() => readSavedState<Mood | null>("lyvora_selected_mood", null));
@@ -391,6 +392,10 @@ export default function App() {
   useEffect(() => {
     saveState("lyvora_selected_mood", selectedMood);
   }, [selectedMood]);
+
+  useEffect(() => {
+    saveState("lyvora_profile_photo", profilePhoto);
+  }, [profilePhoto]);
 
   useEffect(() => {
     const standalone =
@@ -779,6 +784,33 @@ export default function App() {
       { id: Date.now(), from: "system", text: "⛔ Bu eşleşme engellendi. Yeni bir mood seçerek devam edebilirsin.", time: "Şimdi" }
     ]);
     setScreen("home");
+  }
+
+  function handleProfilePhotoUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setToast("Profil fotoğrafı için görsel seçmelisin.");
+      return;
+    }
+
+    if (file.size > 2.5 * 1024 * 1024) {
+      setToast("Fotoğraf 2.5MB altında olmalı.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProfilePhoto(String(reader.result || ""));
+      setToast("Profil fotoğrafı güncellendi ✦");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeProfilePhoto() {
+    setProfilePhoto("");
+    setToast("Profil fotoğrafı kaldırıldı.");
   }
 
   async function logout() {
@@ -1457,7 +1489,7 @@ export default function App() {
           </section>
         )}
 
-        {activeTab === "profile" && <ProfilePanel displayName={displayName} avatar={avatar} email={user?.email} profileLevel={profileLevel} profileXP={profileXP} profileVisitors={profileVisitors} />}
+        {activeTab === "profile" && <ProfilePanel displayName={displayName} avatar={avatar} profilePhoto={profilePhoto} email={user?.email} profileLevel={profileLevel} profileXP={profileXP} profileVisitors={profileVisitors} onPhotoUpload={handleProfilePhotoUpload} onPhotoRemove={removeProfilePhoto} />}
 
         {activeTab === "premium" && (
           <>
@@ -1784,11 +1816,21 @@ function BottomNav({ active, onHome, onChat, onProfile, onPremium }: { active: T
   );
 }
 
-function ProfilePanel({ displayName, avatar, email, profileLevel, profileXP, profileVisitors }: { displayName: string; avatar: string; email?: string | null; profileLevel: number; profileXP: number; profileVisitors: number }) {
+function ProfilePanel({ displayName, avatar, profilePhoto, email, profileLevel, profileXP, profileVisitors, onPhotoUpload, onPhotoRemove }: { displayName: string; avatar: string; profilePhoto: string; email?: string | null; profileLevel: number; profileXP: number; profileVisitors: number; onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void; onPhotoRemove: () => void }) {
   return (
     <section style={s.profilePanel} className="lv-pop lv-profile-panel">
       <div style={s.profileTop}>
-        <div style={s.profileAvatar}>{avatar}</div>
+        <div style={s.profileAvatarWrap}>
+          {profilePhoto ? (
+            <img src={profilePhoto} alt={displayName} style={s.profilePhoto} />
+          ) : (
+            <div style={s.profileAvatar}>{avatar}</div>
+          )}
+          <label style={s.profilePhotoButton}>
+            ✦
+            <input type="file" accept="image/*" onChange={onPhotoUpload} style={{ display: "none" }} />
+          </label>
+        </div>
         <div>
           <h2 style={s.profileName}>{displayName} <span style={s.verifiedBadge}>✔</span></h2>
           <p style={s.profileMail}>{email || "Anonim kullanıcı"}</p>
@@ -1804,6 +1846,7 @@ function ProfilePanel({ displayName, avatar, email, profileLevel, profileXP, pro
         <b>💜 Profil durumu</b>
         <span>Bugün enerjin yüksek görünüyor. Yeni eşleşmeler için hazırsın.</span>
       </div>
+      {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
       <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online görünürlük aktif • Mood sync açık</span></section>
       <button style={s.primaryFull}>Profili Düzenle</button>
     </section>
