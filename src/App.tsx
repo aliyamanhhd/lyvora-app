@@ -282,6 +282,10 @@ export default function App() {
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState("◈");
   const [profilePhoto, setProfilePhoto] = useState<string>(() => readSavedState<string>("lyvora_profile_photo", ""));
+  const [profileBio, setProfileBio] = useState<string>(() => readSavedState<string>("lyvora_profile_bio", "Anonim kal, gerçek bağ kur."));
+  const [profileVibe, setProfileVibe] = useState<string>(() => readSavedState<string>("lyvora_profile_vibe", "Gece enerjisi"));
+  const [profileCity, setProfileCity] = useState<string>(() => readSavedState<string>("lyvora_profile_city", "İstanbul"));
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedMood, setSelectedMood] = useState<Mood | null>(() => readSavedState<Mood | null>("lyvora_selected_mood", null));
@@ -422,6 +426,18 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   useEffect(() => {
     saveState("lyvora_profile_photo", profilePhoto);
   }, [profilePhoto]);
+
+  useEffect(() => {
+    saveState("lyvora_profile_bio", profileBio);
+  }, [profileBio]);
+
+  useEffect(() => {
+    saveState("lyvora_profile_vibe", profileVibe);
+  }, [profileVibe]);
+
+  useEffect(() => {
+    saveState("lyvora_profile_city", profileCity);
+  }, [profileCity]);
 
   useEffect(() => {
     const standalone =
@@ -620,6 +636,10 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
         regionLanguage: regionProfile.language,
         regionTimezone: regionProfile.timezone,
         regionMode: regionProfile.mode,
+        profileBio,
+        profileVibe,
+        profileCity,
+        profilePhoto,
         lastSeen: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
@@ -1515,7 +1535,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
           </section>
         )}
 
-        {activeTab === "profile" && <ProfilePanel displayName={displayName} avatar={avatar} profilePhoto={profilePhoto} email={user?.email} profileLevel={profileLevel} profileXP={profileXP} profileVisitors={profileVisitors} onPhotoUpload={handleProfilePhotoUpload} onPhotoRemove={removeProfilePhoto} />}
+        {activeTab === "profile" && <ProfilePanel displayName={displayName} avatar={avatar} profilePhoto={profilePhoto} profileBio={profileBio} profileVibe={profileVibe} profileCity={profileCity} editOpen={profileEditOpen} setEditOpen={setProfileEditOpen} setProfileBio={setProfileBio} setProfileVibe={setProfileVibe} setProfileCity={setProfileCity} email={user?.email} profileLevel={profileLevel} profileXP={profileXP} profileVisitors={profileVisitors} onPhotoUpload={handleProfilePhotoUpload} onPhotoRemove={removeProfilePhoto} />}
 
         {activeTab === "premium" && (
           <>
@@ -1842,7 +1862,43 @@ function BottomNav({ active, onHome, onChat, onProfile, onPremium }: { active: T
   );
 }
 
-function ProfilePanel({ displayName, avatar, profilePhoto, email, profileLevel, profileXP, profileVisitors, onPhotoUpload, onPhotoRemove }: { displayName: string; avatar: string; profilePhoto: string; email?: string | null; profileLevel: number; profileXP: number; profileVisitors: number; onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void; onPhotoRemove: () => void }) {
+function ProfilePanel({
+  displayName,
+  avatar,
+  profilePhoto,
+  profileBio,
+  profileVibe,
+  profileCity,
+  editOpen,
+  setEditOpen,
+  setProfileBio,
+  setProfileVibe,
+  setProfileCity,
+  email,
+  profileLevel,
+  profileXP,
+  profileVisitors,
+  onPhotoUpload,
+  onPhotoRemove
+}: {
+  displayName: string;
+  avatar: string;
+  profilePhoto: string;
+  profileBio: string;
+  profileVibe: string;
+  profileCity: string;
+  editOpen: boolean;
+  setEditOpen: (value: boolean) => void;
+  setProfileBio: (value: string) => void;
+  setProfileVibe: (value: string) => void;
+  setProfileCity: (value: string) => void;
+  email?: string | null;
+  profileLevel: number;
+  profileXP: number;
+  profileVisitors: number;
+  onPhotoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onPhotoRemove: () => void;
+}) {
   return (
     <section style={s.profilePanel} className="lv-pop lv-profile-panel">
       <div style={s.profileTop}>
@@ -1869,12 +1925,61 @@ function ProfilePanel({ displayName, avatar, profilePhoto, email, profileLevel, 
         <div style={s.profileStat}><b>{profileVisitors}</b><span>Ziyaretçi</span></div>
       </div>
       <div style={s.profileBox}>
-        <b>💜 Profil durumu</b>
-        <span>Bugün enerjin yüksek görünüyor. Yeni eşleşmeler için hazırsın.</span>
+        <b>✦ {profileVibe}</b>
+        <span>{profileBio}</span>
+        <small style={s.profileCity}>📍 {profileCity}</small>
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
       <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online görünürlük aktif • Mood sync açık</span></section>
-      <button style={s.primaryFull}>Profili Düzenle</button>
+      <button style={s.primaryFull} onClick={() => setEditOpen(true)}>Profili Düzenle</button>
+
+      {editOpen && (
+        <div style={s.profileEditOverlay}>
+          <section style={s.profileEditModal} className="lv-pop">
+            <div style={s.profileEditHeader}>
+              <b>Profili Düzenle</b>
+              <button style={s.supportClose} onClick={() => setEditOpen(false)}>×</button>
+            </div>
+
+            <label style={s.label}>Bio</label>
+            <textarea
+              style={s.profileEditTextarea}
+              value={profileBio}
+              onChange={(event) => setProfileBio(event.target.value.slice(0, 140))}
+              placeholder="Kendini kısa anlat..."
+              maxLength={140}
+            />
+
+            <label style={s.label}>Vibe durumu</label>
+            <input
+              style={s.input}
+              value={profileVibe}
+              onChange={(event) => setProfileVibe(event.target.value.slice(0, 32))}
+              placeholder="Örn: Gece enerjisi"
+              maxLength={32}
+            />
+
+            <label style={s.label}>Şehir / bölge</label>
+            <input
+              style={s.input}
+              value={profileCity}
+              onChange={(event) => setProfileCity(event.target.value.slice(0, 32))}
+              placeholder="Örn: İstanbul"
+              maxLength={32}
+            />
+
+            <div style={s.profileEditQuick}>
+              {["Gece enerjisi", "Sakin vibe", "Derin sohbet", "Oyun modu"].map((item) => (
+                <button key={item} style={s.regionChip} onClick={() => setProfileVibe(item)}>
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <button style={s.primaryFull} onClick={() => setEditOpen(false)}>Kaydet</button>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
