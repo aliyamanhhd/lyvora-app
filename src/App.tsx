@@ -333,6 +333,9 @@ export default function App() {
   const [voicePreviewPlaying, setVoicePreviewPlaying] = useState(false);
   const [onlinePresenceMap, setOnlinePresenceMap] = useState<Record<string, boolean>>({});
   const [unreadCount, setUnreadCount] = useState(3);
+  const [isPremium, setIsPremium] = useState(true);
+  const [premiumGlow, setPremiumGlow] = useState(true);
+
   const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
 
   function scrollToSection(target: "features" | "pricing") {
