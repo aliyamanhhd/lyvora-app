@@ -1567,32 +1567,38 @@ function LiveVibePanel({
   return (
     <section style={s.liveVibePanel} className="lv-premium-depth">
       <div style={s.liveVibeTop}>
-        <div>
+        <div style={s.liveVibeTitleBox}>
           <b>Canlı vibe</b>
-          <span>{regionLabel} • şu an eşleşenler</span>
+          <span>{regionLabel}</span>
         </div>
-        <strong><span style={s.liveTinyDot}></span>{onlineCount.toLocaleString("tr-TR")}</strong>
+
+        <div style={s.onlinePulseBadge}>
+          <span style={s.liveTinyDot}></span>
+          {onlineCount.toLocaleString("tr-TR")} online
+        </div>
       </div>
 
-      <div style={s.liveMatchRow}>
+      <div style={s.liveMatchGrid}>
         {[
           { mark: "☾", label: "Gece", value: "96%" },
           { mark: "◈", label: "Bağ", value: "93%" },
           { mark: "⌘", label: "Oyun", value: "89%" }
         ].map((item) => (
-          <div key={item.label} style={s.liveMatchChip}>
+          <div key={item.label} style={s.liveMatchCleanChip}>
             <i>{item.mark}</i>
-            <span>{item.label}</span>
-            <b>{item.value}</b>
+            <div>
+              <b>{item.label}</b>
+              <span>{item.value} uyum</span>
+            </div>
           </div>
         ))}
       </div>
 
-      <button style={s.voicePreviewCard} onClick={onVoicePreview}>
+      <button style={s.voicePreviewCleanCard} onClick={onVoicePreview}>
         <span style={previewPlaying ? s.voicePlayActive : s.voicePlay}>{previewPlaying ? "Ⅱ" : "▶"}</span>
-        <div>
+        <div style={s.voicePreviewText}>
           <b>Voice preview</b>
-          <small>{previewPlaying ? "Canlı ses dalgası aktif" : "Sesli mesaj deneyimini önizle"}</small>
+          <small>{previewPlaying ? "Ses dalgası aktif" : "Sesli mesaj deneyimi"}</small>
         </div>
         <VoiceWave active={previewPlaying} />
       </button>
