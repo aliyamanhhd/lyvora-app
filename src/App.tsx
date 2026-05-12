@@ -118,6 +118,14 @@ const FINAL_POLISH_NOTES = [
 
 const AVATARS = ["◈", "✦", "✧", "☾", "◎", "⌘", "✺", "◇"];
 
+const REPORT_REASONS = [
+  "Spam",
+  "Taciz",
+  "Fake profil",
+  "Uygunsuz içerik",
+  "Rahatsız edici davranış"
+];
+
 const REGION_PRESETS = [
   { country: "Türkiye", city: "İstanbul", language: "tr", timezone: "Europe/Istanbul" },
   { country: "Türkiye", city: "Ankara", language: "tr", timezone: "Europe/Istanbul" },
@@ -319,9 +327,10 @@ export default function App() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [supportOpen, setSupportOpen] = useState(false);
   const [authGuardNotice, setAuthGuardNotice] = useState("");
-  const [blockedRooms, setBlockedRooms] = useState<string[]>([]);
+  const [blockedRooms, setBlockedRooms] = useState<string[]>(() => readSavedState<string[]>("lyvora_blocked_rooms", []));
   const [reportReason, setReportReason] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
+  const [selectedReportReason, setSelectedReportReason] = useState("Spam");
   const [supportText, setSupportText] = useState("");
   const [supportTyping, setSupportTyping] = useState(false);
   const [supportMessages, setSupportMessages] = useState<SupportMessage[]>([
@@ -789,7 +798,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   async function reportActiveChat() {
     if (!requireSignedIn("Rapor göndermek için giriş yapmalısın.")) return;
 
-    const reason = reportReason.trim();
+    const reason = reportReason.trim() || selectedReportReason;
     if (reason.length < 3) {
       setToast("🚨 Rapor sebebi en az 3 karakter olmalı.");
       return;
@@ -802,6 +811,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
         moodId: selectedMood?.id || "",
         moodTitle: selectedMood?.title || "",
         reason,
+        selectedReason: selectedReportReason,
         status: "open",
         createdAt: serverTimestamp()
       });
@@ -819,12 +829,12 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
 
   function blockActiveChat() {
     setBlockedRooms((prev) => {
-      if (prev.includes(activeRoomId)) return prev;
-      return [...prev, activeRoomId];
+      const next = prev.includes(activeRoomId) ? prev : [...prev, activeRoomId];
+      saveState("lyvora_blocked_rooms", next);
+      return next;
     });
 
     setToast("⛔ Bu sohbet engellendi.");
-    if (activeTab !== "chat") setUnreadCount((prev) => prev + 1);
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), from: "system", text: "⛔ Bu eşleşme engellendi. Yeni bir mood seçerek devam edebilirsin.", time: "Şimdi" }
@@ -1213,22 +1223,40 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
         </footer>
 
         {showReportModal && (
-          <div style={s.reportOverlay}>
-            <div style={s.reportModal} className="lv-pop">
-              <h3 style={s.reportTitle}>Kullanıcıyı Rapor Et</h3>
-              <p style={s.reportText}>Bu sohbeti güvenlik ekibine bildirebilirsin. Lütfen kısa bir sebep yaz.</p>
+          <div style={s.profileEditOverlay}>
+            <section style={s.profileEditModal} className="lv-pop">
+              <div style={s.profileEditHeader}>
+                <b>Kullanıcıyı rapor et</b>
+                <button style={s.supportClose} onClick={() => setShowReportModal(false)}>×</button>
+              </div>
+
+              <p style={s.reportText}>Güvenli topluluk için sebebi seç veya kısa açıklama yaz.</p>
+
+              <div style={s.profileEditQuick}>
+                {REPORT_REASONS.map((item) => (
+                  <button
+                    key={item}
+                    style={selectedReportReason === item ? s.regionChipActive : s.regionChip}
+                    onClick={() => setSelectedReportReason(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+
               <textarea
-                style={s.reportInput}
+                style={s.profileEditTextarea}
                 value={reportReason}
                 onChange={(event) => setReportReason(event.target.value)}
-                placeholder="Örn: spam, rahatsız edici konuşma, sahte profil..."
+                placeholder="İstersen kısa açıklama ekle..."
                 maxLength={300}
               />
+
               <div style={s.reportActions}>
                 <button style={s.chatGhostButton} onClick={() => setShowReportModal(false)}>Vazgeç</button>
                 <button style={s.chatDangerButton} onClick={reportActiveChat}>Raporu Gönder</button>
               </div>
-            </div>
+            </section>
           </div>
         )}
 
@@ -1931,6 +1959,13 @@ function ProfilePanel({
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
       <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online görünürlük aktif • Mood sync açık</span></section>
+      <section style={s.moderationPanel}>
+        <div>
+          <b>🛡️ Güvenlik merkezi</b>
+          <span>Report, block ve güvenli sohbet sistemi aktif.</span>
+        </div>
+        <small>Moderation ready</small>
+      </section>
       <button style={s.primaryFull} onClick={() => setEditOpen(true)}>Profili Düzenle</button>
 
       {editOpen && (
