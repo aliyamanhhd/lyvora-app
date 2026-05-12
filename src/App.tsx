@@ -330,6 +330,9 @@ export default function App() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceDuration, setVoiceDuration] = useState(0);
   const [voicePreviewPlaying, setVoicePreviewPlaying] = useState(false);
+  const [onlinePresenceMap, setOnlinePresenceMap] = useState<Record<string, boolean>>({});
+  const [unreadCount, setUnreadCount] = useState(3);
+  const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
 
   function scrollToSection(target: "features" | "pricing") {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
@@ -369,6 +372,12 @@ export default function App() {
 
   useEffect(() => {
     saveState("lyvora_active_tab", activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "chat") {
+      setUnreadCount(0);
+    }
   }, [activeTab]);
 
   useEffect(() => {
@@ -442,6 +451,19 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    const presenceTicker = window.setInterval(() => {
+      const active = Math.random() > 0.22;
+      setOnlinePresenceMap((prev) => ({
+        ...prev,
+        bot: active
+      }));
+      setLastSeenLabel(active ? "şimdi aktif" : `${Math.floor(Math.random() * 8) + 1} dk önce`);
+    }, 6000);
+
+    return () => window.clearInterval(presenceTicker);
+  }, []);
 
   useEffect(() => {
     if (!isRecordingVoice) return;
@@ -751,6 +773,7 @@ export default function App() {
     });
 
     setToast("⛔ Bu sohbet engellendi.");
+    if (activeTab !== "chat") setUnreadCount((prev) => prev + 1);
     setMessages((prev) => [
       ...prev,
       { id: Date.now(), from: "system", text: "⛔ Bu eşleşme engellendi. Yeni bir mood seçerek devam edebilirsin.", time: "Şimdi" }
