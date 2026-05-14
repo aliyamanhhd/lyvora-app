@@ -39,6 +39,7 @@ type DiscoverCard = { emoji: string; title: string; tag: string; match: number }
 type RegionProfile = { country: string; city: string; language: string; timezone: string; mode: "local" | "country" | "global" };
 type SupportMessage = { id: number; from: "user" | "support"; text: string; time: string };
 type AppNotification = { id: number; title: string; text: string; time: string; read: boolean; icon: string };
+type VibeStory = { id: number; imageUrl: string; caption: string; time: string };
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -349,6 +350,7 @@ export default function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const storyInputRef = useRef<HTMLInputElement | null>(null);
   const onlineCount = useMemo(() => Math.floor(Math.random() * 900 + 1300), []);
   const [liveOnlineCount, setLiveOnlineCount] = useState(onlineCount);
   const [deliveryState, setDeliveryState] = useState<"Gönderildi" | "İletildi" | "Görüldü">("Gönderildi");
@@ -364,6 +366,8 @@ export default function App() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() =>
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [vibeStories, setVibeStories] = useState<VibeStory[]>(() => readSavedState<VibeStory[]>("lyvora_vibe_stories", []));
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([
     {
       id: 1,
@@ -1058,7 +1062,57 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
     setToast("Profil fotoğrafı kaldırıldı.");
   }
 
-  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+  async function handleStoryUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setToast("Story için görsel seçmelisin.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast("Story görseli 5MB altında olmalı.");
+      return;
+    }
+
+    try {
+      setToast("Story yükleniyor...");
+
+      let imageUrl = URL.createObjectURL(file);
+
+      if (user && storage) {
+        const path = `vibe-stories/${user.uid}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+        const fileRef = storageRef(storage, path);
+
+        await uploadBytes(fileRef, file);
+        imageUrl = await getDownloadURL(fileRef);
+      }
+
+      const nextStory: VibeStory = {
+        id: Date.now(),
+        imageUrl,
+        caption: profileVibe || "Yeni vibe",
+        time: "Şimdi"
+      };
+
+      setVibeStories((prev) => [nextStory, ...prev].slice(0, 8));
+      pushAppNotification("Story paylaşıldı", "Vibe story profilinde görünüyor.", "✨");
+      setToast("Story paylaşıldı ✨");
+    } catch (error) {
+      console.warn("Story upload skipped:", error);
+      setToast("Story yüklenemedi.");
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  function deleteStory(storyId: number) {
+    setVibeStories((prev) => prev.filter((item) => item.id !== storyId));
+    setToast("Story kaldırıldı.");
+  }
+
+async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -1908,25 +1962,21 @@ async function logout() {
               onVoicePreview={() => setVoicePreviewPlaying((prev) => !prev)}
               previewPlaying={voicePreviewPlaying}
             />
-            <section style={s.storyRow}>
-              {[
-                { icon: "+", mood: MOODS[7], label: "Rastgele" },
-                { icon: "✧", mood: MOODS[7], label: "Rastgele" },
-                { icon: "☾", mood: MOODS[1], label: "Gece" },
-                { icon: "⌘", mood: MOODS[3], label: "Oyun" },
-                { icon: "◈", mood: MOODS[2], label: "Bağ" },
-                { icon: "✺", mood: MOODS[6], label: "Enerji" }
-              ].map((item, i) => (
-                <button
-                  key={item.label + i}
-                  style={i === 0 ? s.storyAdd : s.story}
-                  onClick={() => startChat(item.mood)}
-                  title={item.label}
-                >
-                  {item.icon}
-                </button>
-              ))}
-            </section>
+            <VibeStoryStrip
+              stories={vibeStories}
+              profilePhoto={profilePhoto}
+              avatar={avatar}
+              onAdd={() => storyInputRef.current?.click()}
+              onOpen={() => setStoryModalOpen(true)}
+            />
+
+            <input
+              ref={storyInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleStoryUpload}
+              style={{ display: "none" }}
+            />
             <section style={s.discoverStrip}>
               {DISCOVER_CARDS.map((card) => {
                 const linkedMood =
@@ -2027,6 +2077,79 @@ function LegalPage({
         </button>
       </section>
     </main>
+  );
+}
+
+function VibeStoryStrip({
+  stories,
+  profilePhoto,
+  avatar,
+  onAdd,
+  onOpen
+}: {
+  stories: VibeStory[];
+  profilePhoto: string;
+  avatar: string;
+  onAdd: () => void;
+  onOpen: () => void;
+}) {
+  return (
+    <section style={s.vibeStoryStrip}>
+      <button style={s.vibeStoryAdd} onClick={onAdd}>
+        <span style={s.vibeStoryAvatar}>
+          {profilePhoto ? <img src={profilePhoto} alt="Story" style={s.vibeStoryImage} /> : avatar}
+        </span>
+        <b>Story ekle</b>
+      </button>
+
+      {stories.slice(0, 5).map((story) => (
+        <button key={story.id} style={s.vibeStoryItem} onClick={onOpen}>
+          <img src={story.imageUrl} alt={story.caption} style={s.vibeStoryImage} />
+          <b>{story.caption}</b>
+        </button>
+      ))}
+    </section>
+  );
+}
+
+function StoryModal({
+  stories,
+  onClose,
+  onDelete
+}: {
+  stories: VibeStory[];
+  onClose: () => void;
+  onDelete: (id: number) => void;
+}) {
+  const activeStory = stories[0];
+
+  return (
+    <div style={s.profileEditOverlay}>
+      <section style={s.storyModal} className="lv-pop">
+        <div style={s.profileEditHeader}>
+          <b>Vibe Story</b>
+          <button style={s.supportClose} onClick={onClose}>×</button>
+        </div>
+
+        {activeStory ? (
+          <>
+            <img src={activeStory.imageUrl} alt={activeStory.caption} style={s.storyModalImage} />
+            <div style={s.storyModalFooter}>
+              <div>
+                <b>{activeStory.caption}</b>
+                <span>{activeStory.time}</span>
+              </div>
+              <button style={s.chatDangerButton} onClick={() => onDelete(activeStory.id)}>Sil</button>
+            </div>
+          </>
+        ) : (
+          <div style={s.emptyStory}>
+            <b>Henüz story yok</b>
+            <span>Profilinden bir vibe paylaş.</span>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
