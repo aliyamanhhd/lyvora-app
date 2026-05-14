@@ -56,7 +56,7 @@ const ONBOARDING: OnboardingSlide[] = [
     text: "Lyvora, seçtiğin moda göre daha zarif, akıcı ve gerçek sohbet hissi veren premium bir deneyim sunar."
   },
   {
-    emoji: "💬",
+    emoji: "✦",
     tag: "Fluid live experience",
     title: "Gerçek uygulama hissiyle akar.",
     text: "Akıcı yazıyor efekti, canlı online hissi ve yumuşak mesaj geçişleriyle premium app deneyimi."
@@ -273,7 +273,7 @@ const DISCOVER_CARDS: DiscoverCard[] = [
 
 const MATCH_METRICS: MatchMetric[] = [
   { label: "Mood uyumu", value: 94, icon: "💜" },
-  { label: "Sohbet temposu", value: 88, icon: "💬" },
+  { label: "Sohbet temposu", value: 88, icon: "✦" },
   { label: "Enerji yakınlığı", value: 91, icon: "✨" }
 ];
 
@@ -1571,7 +1571,7 @@ async function startChat(mood: Mood) {
         <section ref={featuresRef} style={s.websiteGrid}>
           <Feature icon="🎨" title="Premium UI" text="Dengeli cam efektleri, yumuşak glow ve temiz spacing." />
           <Feature icon="📱" title="iOS hissi" text="Rounded kartlar, soft shadow ve akıcı mobil deneyim." />
-          <Feature icon="💬" title="Canlı sohbet hissi" text="Yazıyor animasyonu, mesaj geçişleri ve mood akışı." />
+          <Feature icon="✦" title="Canlı sohbet hissi" text="Yazıyor animasyonu, mesaj geçişleri ve mood akışı." />
         </section>
 
         
@@ -1797,7 +1797,7 @@ async function startChat(mood: Mood) {
             <p style={s.authText} className="lv-auth-text">Modern, güvenli ve mood tabanlı anonim sohbet deneyimine giriş yap.</p>
             <div style={s.authMiniGrid}>
               <span>✨ Premium tema</span>
-              <span>💬 Canlı his</span>
+              <span>✦ Canlı his</span>
               <span>🛡️ Anonim akış</span>
             </div>
           </div>
@@ -2005,11 +2005,24 @@ async function startChat(mood: Mood) {
         {toast && <div style={s.toast} onClick={() => setToast("")}>🔔 {dynamicToast || toast}</div>}
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
-        <div style={s.unreadMiniPanel}><span>💬</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış mesaj` : "Mesajlar güncel"}</b><small>Son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
-        <button style={s.closeCircleButton} onClick={() => setCloseCircleOpen(true)}>◈ Saved Aura • {savedAuras.length}</button>
-        <button style={s.globalRoomButton} onClick={() => setGlobalRoomOpen(true)}>
-          🌍 Global Lounge • everyone online
-        </button>
+        <div style={s.unreadMiniPanel}><span>✦</span><b>{unreadCount > 0 ? `${unreadCount} new signals` : "signals clear"}</b><small>last seen: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
+        <section style={s.homeActionGrid}>
+          <button style={s.homeActionCard} onClick={() => setCloseCircleOpen(true)}>
+            <span style={s.homeActionIcon}>◈</span>
+            <div>
+              <b>Saved Aura</b>
+              <small>{savedAuras.length} favori bağ</small>
+            </div>
+          </button>
+
+          <button style={s.homeActionCardPrimary} onClick={() => setGlobalRoomOpen(true)}>
+            <span style={s.homeActionIcon}>🌍</span>
+            <div>
+              <b>Global Lounge</b>
+              <small>everyone online</small>
+            </div>
+          </button>
+        </section>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
@@ -2074,7 +2087,7 @@ async function startChat(mood: Mood) {
 
         {activeTab === "chat" && (
           <section style={s.emptyTab}>
-            <div style={s.emptyIcon}>💬</div>
+            <div style={s.emptyIcon}>✦</div>
             <h2>Henüz açık sohbet yok</h2>
             <p>Bir mood seçtiğinde sohbet burada devam eder.</p>
             <button style={s.primaryFull} onClick={() => startChat(MOODS[1])}>Hızlı eşleşme başlat</button>
@@ -2383,7 +2396,7 @@ function SupportWidget({
       {open && (
         <section style={s.supportPanel} className="lv-pop">
           <header style={s.supportHeader}>
-            <div style={s.supportAvatar}>💬</div>
+            <div style={s.supportAvatar}>✦</div>
             <div style={{ flex: 1 }}>
               <b>Lyvora Destek</b>
               <span>Genelde birkaç dakika içinde yanıtlar</span>
@@ -2432,7 +2445,7 @@ function SupportWidget({
       )}
 
       <button style={s.supportFab} onClick={() => setOpen(!open)}>
-        {open ? "×" : "💬"}
+        {open ? "×" : "✦"}
       </button>
     </div>
   );
@@ -2656,7 +2669,7 @@ function BottomNav({ active, onHome, onChat, onProfile, onPremium }: { active: T
   return (
     <nav style={s.bottomNav} className="lv-floating-nav"><span style={s.navGlowOrb}></span>
       <button style={active === "home" ? s.navItemActive : s.navItem} onClick={onHome}>🏠<span>Ana</span></button>
-      <button style={active === "chat" ? s.navItemActive : s.navItem} onClick={onChat}>💬<span>Sohbet</span></button>
+      <button style={active === "chat" ? s.navItemActive : s.navItem} onClick={onChat}>✦<span>Sohbet</span></button>
       <button style={active === "profile" ? s.navItemActive : s.navItem} onClick={onProfile}>👤<span>Profil</span></button>
       <button style={active === "premium" ? s.navItemActive : s.navItem} onClick={onPremium}>👑<span>Plus</span></button>
     </nav>
