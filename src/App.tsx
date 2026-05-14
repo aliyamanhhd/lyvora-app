@@ -275,6 +275,34 @@ const REPLIES: Record<string, string[]> = {
   default: ["Anladım. Bazen böyle konuşmak gerçekten iyi geliyor.", "Güzel söyledin. Biraz daha açmak ister misin?", "Buradayım. Konu nereye giderse gitsin dinlerim."]
 };
 
+const AI_OPENERS: Record<string, string[]> = {
+  night: [
+    "Gece enerjin nasıl?",
+    "Bugün seni en çok ne düşündürdü?",
+    "Şu an dinlediğin bir şarkı olsaydı ne olurdu?"
+  ],
+  bond: [
+    "Gerçekten konuşmak istediğin bir şey var mı?",
+    "Sence iyi bir bağ nasıl başlar?",
+    "Bugün kalbinde kalan şey neydi?"
+  ],
+  game: [
+    "Hızlı oyun: müzik mi film mi?",
+    "3 kelimeyle bugünün nasıl geçti?",
+    "Bir kelime seç: gece, ateş, rüya."
+  ],
+  default: [
+    "Bugün enerjin nasıl?",
+    "Şu an ne konuşmak iyi gelir?",
+    "Bana küçük bir ipucu ver, sohbeti ben başlatayım."
+  ]
+};
+
+function getAiOpeners(mood?: Mood | null) {
+  if (!mood) return AI_OPENERS.default;
+  return AI_OPENERS[mood.id] || AI_OPENERS.default;
+}
+
 const RADIO_TRACKS = [
   { title: "Night energy mix", vibe: "Dark ambient", src: "/music/night-energy.mp3", mood: "🌙" },
   { title: "Chill wave", vibe: "Soft lofi", src: "/music/chill-wave.mp3", mood: "💜" },
@@ -347,6 +375,7 @@ export default function App() {
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [voiceDuration, setVoiceDuration] = useState(0);
   const [voicePreviewPlaying, setVoicePreviewPlaying] = useState(false);
+  const [showAiOpeners, setShowAiOpeners] = useState(true);
   const [onlinePresenceMap, setOnlinePresenceMap] = useState<Record<string, boolean>>({});
   const [unreadCount, setUnreadCount] = useState(3);
   const [isPremium, setIsPremium] = useState(true);
@@ -1036,6 +1065,7 @@ async function logout() {
     window.setTimeout(() => setMatchingStep(2), 1400);
     window.setTimeout(() => {
       setIsTyping(true);
+      setShowAiOpeners(true);
       setMessages([{ id: Date.now(), from: "system", text: `${mood.emoji} ${mood.title} modu açıldı. Anonim eşleşme bulundu.` }]);
       setScreen("chat");
       window.setTimeout(() => {
@@ -1618,6 +1648,23 @@ async function logout() {
             {isTyping && <TypingBubble />}
             <div ref={messagesEndRef} />
           </div>
+          {showAiOpeners && (
+            <section style={s.aiOpenerPanel}>
+              <div style={s.aiOpenerTop}>
+                <b>AI opener</b>
+                <button style={s.aiOpenerClose} onClick={() => setShowAiOpeners(false)}>×</button>
+              </div>
+
+              <div style={s.aiOpenerGrid}>
+                {getAiOpeners(selectedMood).map((item) => (
+                  <button key={item} style={s.aiOpenerButton} onClick={() => sendMessage(item)}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           <div style={s.quickReplies}>{["Naber?", "Biraz konuşalım", "Oyun", "Ruh halim karışık"].map((item) => <button key={item} style={s.quickButton} onClick={() => sendMessage(item)}>{item}</button>)}</div>
           <footer style={isRecordingVoice ? s.inputAreaRecording : s.inputArea}>
             <button
