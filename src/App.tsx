@@ -25,7 +25,7 @@ type Screen = "onboarding" | "landing" | "auth" | "home" | "match" | "chat" | "p
 type AuthMode = "login" | "register";
 type Tab = "home" | "chat" | "profile" | "premium";
 type Mood = { id: string; emoji: string; title: string; desc: string; color: string };
-type Message = { id: number | string; from: "me" | "bot" | "system"; text: string; time?: string; uid?: string };
+type Message = { id: number | string; from: "me" | "bot" | "system"; text: string; time?: string; uid?: string; type?: "text" | "voice"; voiceUrl?: string; duration?: string };
 type Plan = { name: string; price: string; tag: string; features: string[]; highlight?: boolean };
 type OnboardingSlide = { emoji: string; title: string; text: string; tag: string };
 type MatchMetric = { label: string; value: number; icon: string };
@@ -311,6 +311,8 @@ export default function App() {
   const featuresRef = useRef<HTMLElement | null>(null);
   const pricingRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const voiceChunksRef = useRef<Blob[]>([]);
   const onlineCount = useMemo(() => Math.floor(Math.random() * 900 + 1300), []);
   const [liveOnlineCount, setLiveOnlineCount] = useState(onlineCount);
   const [deliveryState, setDeliveryState] = useState<"Gönderildi" | "İletildi" | "Görüldü">("Gönderildi");
@@ -989,16 +991,41 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   }
 
   function formatVoiceDuration(seconds: number) {
-    const safeSeconds = Math.max(1, Math.min(59, seconds || 1));
-    return `0:${String(safeSeconds).padStart(2, "0")}`;
+    const safeSeconds = Math.max(1, Math.min(180, seconds || 1));
+    const minutes = Math.floor(safeSeconds / 60);
+    const rest = safeSeconds % 60;
+    return `${minutes}:${String(rest).padStart(2, "0")}`;
   }
 
-  function startVoiceRecording() {
+  async function startVoiceRecording() {
     if (!requireSignedIn("Sesli mesaj göndermek için giriş yapmalısın.")) return;
     if (blockedRooms.includes(activeRoomId)) return setToast("⛔ Bu sohbet engellendi.");
-    setVoiceDuration(0);
-    setIsRecordingVoice(true);
-    setToast("🎙️ Ses kaydı başladı.");
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      voiceChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          voiceChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+
+      setVoiceDuration(0);
+      setIsRecordingVoice(true);
+      setToast("🎙️ Ses kaydı başladı.");
+    } catch (error) {
+      console.warn("Voice permission skipped:", error);
+      setToast("🎙️ Mikrofon izni gerekiyor.");
+    }
   }
 
   async function finishVoiceRecording() {
@@ -1006,17 +1033,39 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
 
     setIsRecordingVoice(false);
 
-    const duration = formatVoiceDuration(voiceDuration || 4);
-    const voiceText = `voice::${duration}`;
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), from: "me", text: voiceText, time: "Şimdi", uid: user?.uid }
-    ]);
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+
+    const duration = formatVoiceDuration(voiceDuration || 1);
+
+    await new Promise<void>((resolve) => {
+      recorder.onstop = () => {
+        recorder.stream.getTracks().forEach((track) => track.stop());
+        resolve();
+      };
+      recorder.stop();
+    });
+
+    const voiceBlob = new Blob(voiceChunksRef.current, { type: "audio/webm" });
+    const voiceUrl = URL.createObjectURL(voiceBlob);
+
+    const voiceMessage: Message = {
+      id: Date.now(),
+      from: "me",
+      text: "Sesli mesaj",
+      type: "voice",
+      voiceUrl,
+      duration,
+      time: "Şimdi",
+      uid: user?.uid
+    };
+
+    setMessages((prev) => [...prev, voiceMessage]);
 
     try {
       await addDoc(collection(db, "rooms", activeRoomId, "messages"), {
         from: "me",
-        text: voiceText,
+        text: "Sesli mesaj",
         uid: user?.uid || "anonymous",
         type: "voice",
         duration,
@@ -1047,6 +1096,13 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   }
 
   function cancelVoiceRecording() {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stream.getTracks().forEach((track) => track.stop());
+      recorder.stop();
+    }
+
+    voiceChunksRef.current = [];
     setIsRecordingVoice(false);
     setVoiceDuration(0);
     setToast("🎙️ Ses kaydı iptal edildi.");
@@ -1793,11 +1849,31 @@ function VoiceWave({ active = false }: { active?: boolean }) {
   );
 }
 
-function VoiceMessageCard({ duration }: { duration: string }) {
+function VoiceMessageCard({ duration, voiceUrl }: { duration: string; voiceUrl?: string }) {
   const [playing, setPlaying] = useState(false);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+
+  function toggleVoice() {
+    if (!voiceUrl) {
+      setPlaying((prev) => !prev);
+      return;
+    }
+
+    if (!audioElementRef.current) {
+      audioElementRef.current = new Audio(voiceUrl);
+      audioElementRef.current.onended = () => setPlaying(false);
+    }
+
+    if (playing) {
+      audioElementRef.current.pause();
+      setPlaying(false);
+    } else {
+      audioElementRef.current.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+    }
+  }
 
   return (
-    <button style={s.voiceMessageCard} onClick={() => setPlaying((prev) => !prev)}>
+    <button style={s.voiceMessageCard} onClick={toggleVoice}>
       <span style={playing ? s.voicePlayActive : s.voicePlay}>{playing ? "Ⅱ" : "▶"}</span>
       <VoiceWave active={playing} />
       <b>{duration}</b>
@@ -2149,8 +2225,8 @@ function Bubble({ msg }: { msg: Message }) {
         ...(msg.from === "system" ? s.systemMessage : {})
       }}
     >
-      {String(msg.text).startsWith("voice::") ? (
-        <VoiceMessageCard duration={String(msg.text).replace("voice::", "") || "0:04"} />
+      {(msg.type === "voice" || String(msg.text).startsWith("voice::")) ? (
+        <VoiceMessageCard duration={msg.duration || String(msg.text).replace("voice::", "") || "0:04"} voiceUrl={msg.voiceUrl} />
       ) : (
         <span>{msg.text}</span>
       )}
