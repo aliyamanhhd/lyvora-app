@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { auth, db } from "./firebase";
+import {
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL
+} from "firebase/storage";
+import { auth, db, storage } from "./firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -718,6 +723,10 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
             from: data.from || "bot",
             text: data.text || "",
             uid: data.uid || "",
+            type: data.type || "text",
+            voiceUrl: data.voiceUrl || "",
+            imageUrl: data.imageUrl || "",
+            duration: data.duration || "",
             time: data.createdAt ? "Şimdi" : ""
           } as Message;
         });
@@ -1063,51 +1072,67 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
       return;
     }
 
-    const imageUrl = URL.createObjectURL(file);
-
-    const imageMessage: Message = {
-      id: Date.now(),
-      from: "me",
-      text: "Fotoğraf",
-      type: "image",
-      imageUrl,
-      time: "Şimdi",
-      uid: user?.uid
-    };
-
-    setMessages((prev) => [...prev, imageMessage]);
+    if (!user) {
+      setToast("Fotoğraf göndermek için giriş yapmalısın.");
+      return;
+    }
 
     try {
+      setToast("Fotoğraf yükleniyor...");
+
+      const path = `chat-images/${user.uid}/${activeRoomId}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+      const fileRef = storageRef(storage, path);
+
+      await uploadBytes(fileRef, file);
+      const imageUrl = await getDownloadURL(fileRef);
+
+      const imageMessage: Message = {
+        id: Date.now(),
+        from: "me",
+        text: "Fotoğraf",
+        type: "image",
+        imageUrl,
+        time: "Şimdi",
+        uid: user.uid
+      };
+
+      setMessages((prev) => [...prev, imageMessage]);
+
       await addDoc(collection(db, "rooms", activeRoomId, "messages"), {
         from: "me",
         text: "Fotoğraf",
-        uid: user?.uid || "anonymous",
+        uid: user.uid,
         type: "image",
+        imageUrl,
+        storagePath: path,
         createdAt: serverTimestamp()
       });
+
+      pushAppNotification("Fotoğraf gönderildi", "Medyan güvenli şekilde yüklendi.", "📸");
+      setDeliveryState("Gönderildi");
+      window.setTimeout(() => setDeliveryState("İletildi"), 420);
+      window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
+
+      setIsTyping(true);
+
+      window.setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            from: "bot",
+            text: "Fotoğrafını gördüm ✨",
+            time: "Şimdi"
+          }
+        ]);
+      }, 1200);
     } catch (error) {
-      console.warn("Image message save skipped:", error);
+      console.warn("Image upload failed:", error);
+      setToast("Fotoğraf yüklenemedi. Storage ayarlarını kontrol et.");
+    } finally {
+      event.target.value = "";
     }
-
-    pushAppNotification("Mesaj gönderildi", "Mesajın güvenli şekilde iletiliyor.", "💬");
-    setDeliveryState("Gönderildi");
-    window.setTimeout(() => setDeliveryState("İletildi"), 420);
-    window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
-
-    setIsTyping(true);
-
-    window.setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          from: "bot",
-          text: "Fotoğrafını gördüm ✨",
-          time: "Şimdi"
-        }
-      ]);
-    }, 1200);
   }
 
 async function logout() {
@@ -1165,6 +1190,11 @@ async function logout() {
     if (blockedRooms.includes(activeRoomId)) return setToast("⛔ Bu sohbet engellendi.");
 
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setToast("Bu tarayıcı ses kaydını desteklemiyor.");
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       voiceChunksRef.current = [];
@@ -1210,52 +1240,74 @@ async function logout() {
     });
 
     const voiceBlob = new Blob(voiceChunksRef.current, { type: "audio/webm" });
-    const voiceUrl = URL.createObjectURL(voiceBlob);
 
-    const voiceMessage: Message = {
-      id: Date.now(),
-      from: "me",
-      text: "Sesli mesaj",
-      type: "voice",
-      voiceUrl,
-      duration,
-      time: "Şimdi",
-      uid: user?.uid
-    };
-
-    setMessages((prev) => [...prev, voiceMessage]);
+    if (!user) {
+      setToast("Sesli mesaj göndermek için giriş yapmalısın.");
+      setVoiceDuration(0);
+      voiceChunksRef.current = [];
+      return;
+    }
 
     try {
+      setToast("Ses yükleniyor...");
+
+      const path = `voice-messages/${user.uid}/${activeRoomId}/${Date.now()}.webm`;
+      const fileRef = storageRef(storage, path);
+
+      await uploadBytes(fileRef, voiceBlob);
+      const voiceUrl = await getDownloadURL(fileRef);
+
+      const voiceMessage: Message = {
+        id: Date.now(),
+        from: "me",
+        text: "Sesli mesaj",
+        type: "voice",
+        voiceUrl,
+        duration,
+        time: "Şimdi",
+        uid: user.uid
+      };
+
+      setMessages((prev) => [...prev, voiceMessage]);
+
       await addDoc(collection(db, "rooms", activeRoomId, "messages"), {
         from: "me",
         text: "Sesli mesaj",
-        uid: user?.uid || "anonymous",
+        uid: user.uid,
         type: "voice",
+        voiceUrl,
         duration,
+        storagePath: path,
         createdAt: serverTimestamp()
       });
+
+      pushAppNotification("Sesli mesaj gönderildi", `${duration} uzunluğunda ses kaydı yüklendi.`, "🎙️");
+
+      setDeliveryState("Gönderildi");
+      window.setTimeout(() => setDeliveryState("İletildi"), 420);
+      window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
+      setVoiceDuration(0);
+      voiceChunksRef.current = [];
+      setIsTyping(true);
+
+      window.setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            from: "bot",
+            text: "Sesini aldım. Enerjin çok net geldi ✨",
+            time: "Şimdi"
+          }
+        ]);
+      }, 1100);
     } catch (error) {
-      console.warn("Voice message save skipped:", error);
+      console.warn("Voice upload failed:", error);
+      setToast("Ses yüklenemedi. Storage ayarlarını kontrol et.");
+      setVoiceDuration(0);
+      voiceChunksRef.current = [];
     }
-
-    setDeliveryState("Gönderildi");
-    window.setTimeout(() => setDeliveryState("İletildi"), 420);
-    window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
-    setVoiceDuration(0);
-    setIsTyping(true);
-
-    window.setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          from: "bot",
-          text: "Sesini aldım. Enerjin çok net geldi ✨",
-          time: "Şimdi"
-        }
-      ]);
-    }, 1100);
   }
 
   function cancelVoiceRecording() {
