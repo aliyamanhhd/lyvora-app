@@ -2005,25 +2005,25 @@ async function startChat(mood: Mood) {
         {toast && <div style={s.toast} onClick={() => setToast("")}>🔔 {dynamicToast || toast}</div>}
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
-        <div style={s.unreadMiniPanel}><span>✦</span><b>{unreadCount > 0 ? `${unreadCount} new signals` : "signals clear"}</b><small>last seen: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
-        <section style={s.homeActionGrid}>
-          <button style={s.homeActionCard} onClick={() => setCloseCircleOpen(true)}>
-            <span style={s.homeActionIcon}>◈</span>
+        <div style={s.unreadMiniPanel}><span>✦</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış` : "güncel"}</b><small>son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
+        <section style={s.simpleHomeActions}>
+          <button style={s.simplePrimaryAction} onClick={() => setGlobalRoomOpen(true)}>
+            <span>🌍</span>
+            <div>
+              <b>Global Lounge</b>
+              <small>Dünyadaki herkesle canlı oda</small>
+            </div>
+          </button>
+
+          <button style={s.simpleAction} onClick={() => setCloseCircleOpen(true)}>
+            <span>◈</span>
             <div>
               <b>Saved Aura</b>
               <small>{savedAuras.length} favori bağ</small>
             </div>
           </button>
-
-          <button style={s.homeActionCardPrimary} onClick={() => setGlobalRoomOpen(true)}>
-            <span style={s.homeActionIcon}>🌍</span>
-            <div>
-              <b>Global Lounge</b>
-              <small>everyone online</small>
-            </div>
-          </button>
         </section>
-        {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
+{!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
             <div style={s.statusPill}><span style={s.onlineDot}></span>{liveOnlineCount.toLocaleString("tr-TR")} kişi şu an aktif</div>
@@ -2079,7 +2079,7 @@ async function startChat(mood: Mood) {
                 );
               })}
             </section>
-            <section style={s.activityFeedPanel}><div style={s.sectionHeader}><b>Live activity</b><span>{activityPulse} yeni sinyal</span></div>{ACTIVITY_FEED.slice(0,3).map((item) => <div key={item.title} style={s.activityItem}><span style={s.activityIcon}>{item.icon}</span><div><b>{item.title}</b><small>{item.text}</small></div><em>{item.time}</em></div>)}</section>
+            <section style={s.activityFeedPanel}><div style={s.sectionHeader}><b>Live</b><span>{activityPulse} yeni sinyal</span></div>{ACTIVITY_FEED.slice(0,3).map((item) => <div key={item.title} style={s.activityItem}><span style={s.activityIcon}>{item.icon}</span><div><b>{item.title}</b><small>{item.text}</small></div><em>{item.time}</em></div>)}</section>
             <RegionMatchPanel region={regionProfile} score={regionalMatchScore} onChange={(nextRegion) => { setRegionProfile(nextRegion); setRegionalMatchScore(nextRegion.mode === "local" ? 97 : nextRegion.mode === "country" ? 92 : 84); }} />
             <section style={s.moodGrid}>{MOODS.map((mood) => <button key={mood.id} className="lv-premium-depth" style={{ ...s.moodCard, borderColor: `${mood.color}44` }} onClick={() => startChat(mood)}><span style={s.moodIcon}>{mood.emoji}</span><b>{mood.title}</b><small>{mood.desc}</small></button>)}</section>
           </>
@@ -2745,15 +2745,7 @@ function ProfilePanel({
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
       <section style={s.settingsGlassPanel}><b>⚙️ premium aura</b><span>live signals açık • Online presence aktif • Mood sync açık</span></section>
-      <section style={s.savedAuraProfileBox}>
-        <div>
-          <b>◈ Saved Aura</b>
-          <span>{savedAuras.length} favori bağ kaydedildi.</span>
-        </div>
-        <button style={s.savedAuraOpen} onClick={() => setCloseCircleOpen(true)}>Aç</button>
-      </section>
-
-      <section style={s.moderationPanel}>
+<section style={s.moderationPanel}>
         <div>
           <b>🛡️ Güvenlik merkezi</b>
           <span>Report, block ve güvenli sohbet sistemi aktif.</span>
