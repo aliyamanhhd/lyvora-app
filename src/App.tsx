@@ -2006,23 +2006,6 @@ async function startChat(mood: Mood) {
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         <div style={s.unreadMiniPanel}><span>✦</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış` : "güncel"}</b><small>son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
-        <section style={s.simpleHomeActions}>
-          <button style={s.simplePrimaryAction} onClick={() => setScreen("global")}>
-            <span>🌍</span>
-            <div>
-              <b>Global Lounge</b>
-              <small>Dünyadaki herkesle canlı oda</small>
-            </div>
-          </button>
-
-          <button style={s.simpleAction} onClick={() => setCloseCircleOpen(true)}>
-            <span>◈</span>
-            <div>
-              <b>Saved Aura</b>
-              <small>{savedAuras.length} favori bağ</small>
-            </div>
-          </button>
-        </section>
 {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
@@ -2081,6 +2064,15 @@ async function startChat(mood: Mood) {
             </section>
             <section style={s.activityFeedPanel}><div style={s.sectionHeader}><b>Live</b><span>{activityPulse} yeni sinyal</span></div>{ACTIVITY_FEED.slice(0,3).map((item) => <div key={item.title} style={s.activityItem}><span style={s.activityIcon}>{item.icon}</span><div><b>{item.title}</b><small>{item.text}</small></div><em>{item.time}</em></div>)}</section>
             <RegionMatchPanel region={regionProfile} score={regionalMatchScore} onChange={(nextRegion) => { setRegionProfile(nextRegion); setRegionalMatchScore(nextRegion.mode === "local" ? 97 : nextRegion.mode === "country" ? 92 : 84); }} />
+            <button style={s.globalMoodCard} onClick={() => setScreen("global")}>
+              <div style={s.globalMoodCardTop}>
+                <span style={s.globalMoodIcon}>🌍</span>
+                <span style={s.globalMoodLive}>4.8k online</span>
+              </div>
+              <b>Global Lounge</b>
+              <small>Herkesin katılabileceği canlı dünya odası.</small>
+            </button>
+
             <section style={s.moodGrid}>{MOODS.map((mood) => <button key={mood.id} className="lv-premium-depth" style={{ ...s.moodCard, borderColor: `${mood.color}44` }} onClick={() => startChat(mood)}><span style={s.moodIcon}>{mood.emoji}</span><b>{mood.title}</b><small>{mood.desc}</small></button>)}</section>
           </>
         )}
