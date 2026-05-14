@@ -334,6 +334,7 @@ export default function App() {
   const [theme, setTheme] = useState<"dark" | "light">(() => readSavedState<"dark" | "light">("lyvora_theme", "dark"));
   const [onboardingStep, setOnboardingStep] = useState(() => readSavedState<number>("lyvora_onboarding_step", 0));
   const [matchingStep, setMatchingStep] = useState(0);
+  const [matchPulse, setMatchPulse] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const featuresRef = useRef<HTMLElement | null>(null);
@@ -700,7 +701,17 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
       setLiveOnlineCount((prev) => Math.max(900, prev + Math.floor(Math.random() * 17) - 8));
     }, 2200);
     return () => window.clearInterval(ticker);
-  }, []); // lv-live-online-ticker
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "match") return;
+
+    const matchPulseTicker = window.setInterval(() => {
+      setMatchPulse((prev) => (prev + 1) % 4);
+    }, 520);
+
+    return () => window.clearInterval(matchPulseTicker);
+  }, [screen]); // lv-live-online-ticker
 
   useEffect(() => {
     const notifications = [
@@ -1059,6 +1070,7 @@ async function logout() {
     const roomId = await createMoodRoom(mood);
     setActiveRoomId(roomId);
     setMatchingStep(0);
+    setMatchPulse(0);
     setRegionalMatchScore(regionProfile.mode === "local" ? 97 : regionProfile.mode === "country" ? 92 : 84);
     setScreen("match");
     window.setTimeout(() => setMatchingStep(1), 700);
@@ -1596,9 +1608,10 @@ async function logout() {
       <main style={appPageStyle} className={isLight ? "lv-light-mode" : "lv-dark-mode"}>
         <ThemeFX light={isLight} />
         <section style={s.matchScreen} className="lv-pop">
-          <div style={s.matchOrb}>{selectedMood?.emoji || "💜"}</div>
-          <h1 style={s.matchTitle}>Eşleşme aranıyor</h1>
+          <div style={s.matchOrbWrap}><span style={{ ...s.matchPulseRing, transform: `scale(${1 + matchPulse * 0.08})`, opacity: 0.32 - matchPulse * 0.05 }}></span><div style={s.matchOrb}>{selectedMood?.emoji || "◈"}</div></div>
+          <h1 style={s.matchTitle}>Bağ kuruluyor</h1>
           <p style={s.matchText}>{stepTexts[matchingStep] || stepTexts[0]}...</p>
+          <div style={s.matchPercent}>{matchingStep === 0 ? "34" : matchingStep === 1 ? "68" : regionalMatchScore}%</div>
           <p style={s.matchRegionText}>{regionMatchLabel(regionProfile)} • {regionProfile.timezone}</p>
           <div style={s.matchRings}>
             <div style={s.matchUser}>🌙</div>
@@ -1613,6 +1626,13 @@ async function logout() {
               </div>
             ))}
           </div>
+
+          <div style={s.matchSignalGrid}>
+            <span>Local vibe</span>
+            <span>Live aura</span>
+            <span>Safe match</span>
+          </div>
+
           <div style={s.loadingBar}>
             <div style={{ ...s.loadingFill, width: matchingStep === 0 ? "34%" : matchingStep === 1 ? "68%" : "100%" }} />
           </div>
