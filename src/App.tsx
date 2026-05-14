@@ -374,6 +374,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
 
   const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
   const [presenceSynced, setPresenceSynced] = useState(false);
+  const [lastReadAt, setLastReadAt] = useState<number>(() => readSavedState<number>("lyvora_last_read_at", Date.now()));
 
   function scrollToSection(target: "features" | "pricing") {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
@@ -412,12 +413,24 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   }, [screen]);
 
   useEffect(() => {
+    if (screen === "chat") {
+      setUnreadCount(0);
+      const now = Date.now();
+      setLastReadAt(now);
+      saveState("lyvora_last_read_at", now);
+    }
+  }, [screen]);
+
+  useEffect(() => {
     saveState("lyvora_active_tab", activeTab);
   }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === "chat") {
       setUnreadCount(0);
+      const now = Date.now();
+      setLastReadAt(now);
+      saveState("lyvora_last_read_at", now);
     }
   }, [activeTab]);
 
@@ -1482,7 +1495,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
           </div>
           <div style={s.chatInfo}><b>✨ Sohbet başladı!</b><span>İkiniz de {selectedMood?.title} modundasınız.</span></div>
           <div style={s.typingTopBar}>✨ typing sync active • ultra connection stable</div>
-          <div style={s.chatPresenceStrip}><span style={s.liveTinyDot}></span><b>Canlı bağlantı aktif</b><small>{deliveryState}</small></div>
+          <div style={s.chatPresenceStrip}><span style={s.liveTinyDot}></span><b>Canlı bağlantı aktif</b><small>{deliveryState} • okundu senkronize</small></div>
           <div style={s.messages}>
             {messages.map((msg) => <Bubble key={msg.id} msg={msg} />)}
             {isTyping && <TypingBubble />}
@@ -1553,6 +1566,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
         {toast && <div style={s.toast} onClick={() => setToast("")}>🔔 {dynamicToast || toast}</div>}
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
+        <div style={s.unreadMiniPanel}><span>💬</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış mesaj` : "Mesajlar güncel"}</b><small>Son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
