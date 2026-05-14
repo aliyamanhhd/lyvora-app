@@ -26,7 +26,7 @@ import {
   updateDoc
 } from "firebase/firestore";
 
-type Screen = "onboarding" | "landing" | "auth" | "home" | "match" | "chat" | "privacy" | "terms" | "contact";
+type Screen = "onboarding" | "landing" | "auth" | "home" | "match" | "chat" | "global" | "privacy" | "terms" | "contact";
 type AuthMode = "login" | "register";
 type Tab = "home" | "chat" | "profile" | "premium";
 type Mood = { id: string; emoji: string; title: string; desc: string; color: string };
@@ -2007,7 +2007,7 @@ async function startChat(mood: Mood) {
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         <div style={s.unreadMiniPanel}><span>✦</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış` : "güncel"}</b><small>son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
         <section style={s.simpleHomeActions}>
-          <button style={s.simplePrimaryAction} onClick={() => setGlobalRoomOpen(true)}>
+          <button style={s.simplePrimaryAction} onClick={() => setScreen("global")}>
             <span>🌍</span>
             <div>
               <b>Global Lounge</b>
