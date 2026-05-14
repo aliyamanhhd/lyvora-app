@@ -41,6 +41,7 @@ type SupportMessage = { id: number; from: "user" | "support"; text: string; time
 type AppNotification = { id: number; title: string; text: string; time: string; read: boolean; icon: string };
 type VibeStory = { id: number; imageUrl: string; caption: string; time: string };
 type SavedAura = { id: number; name: string; mood: string; match: number; lastSeen: string; avatar: string };
+type GlobalRoomMessage = { id: number; user: string; text: string; country: string; time: string };
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -369,6 +370,13 @@ export default function App() {
   );
   const [savedAuras, setSavedAuras] = useState<SavedAura[]>(() => readSavedState<SavedAura[]>("lyvora_saved_auras", []));
   const [closeCircleOpen, setCloseCircleOpen] = useState(false);
+  const [globalRoomOpen, setGlobalRoomOpen] = useState(false);
+  const [globalMessage, setGlobalMessage] = useState("");
+  const [globalMessages, setGlobalMessages] = useState<GlobalRoomMessage[]>([
+    { id: 1, user: "NightAura", text: "anyone awake rn?", country: "🇺🇸", time: "02:14" },
+    { id: 2, user: "Luna", text: "istanbul vibes tonight ✨", country: "🇹🇷", time: "02:16" },
+    { id: 3, user: "Void", text: "music recommendations?", country: "🇩🇪", time: "02:17" }
+  ]);
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [vibeStories, setVibeStories] = useState<VibeStory[]>(() => readSavedState<VibeStory[]>("lyvora_vibe_stories", []));
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([
@@ -1237,7 +1245,28 @@ async function logout() {
     startChat(mood);
   }
 
-  async function startChat(mood: Mood) {
+  
+function sendGlobalMessage() {
+    const trimmed = globalMessage.trim();
+    if (!trimmed) return;
+
+    const nextMessage: GlobalRoomMessage = {
+      id: Date.now(),
+      user: displayName || "anonymous",
+      text: trimmed.slice(0, 180),
+      country: "🌍",
+      time: new Date().toLocaleTimeString("tr-TR", {
+        hour: "2-digit",
+        minute: "2-digit"
+      })
+    };
+
+    setGlobalMessages((prev) => [...prev, nextMessage]);
+    setGlobalMessage("");
+    pushAppNotification("Global room", "Mesajın dünya odasına gönderildi.", "🌍");
+  }
+
+async function startChat(mood: Mood) {
     if (!requireSignedIn("Sohbet başlatmak için giriş yapmalısın.")) return;
     setSelectedMood(mood);
     const roomId = await createMoodRoom(mood);
@@ -1978,6 +2007,9 @@ async function logout() {
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         <div style={s.unreadMiniPanel}><span>💬</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış mesaj` : "Mesajlar güncel"}</b><small>Son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
         <button style={s.closeCircleButton} onClick={() => setCloseCircleOpen(true)}>◈ Saved Aura • {savedAuras.length}</button>
+        <button style={s.globalRoomButton} onClick={() => setGlobalRoomOpen(true)}>
+          🌍 Global Lounge • everyone online
+        </button>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
@@ -2112,6 +2144,59 @@ function LegalPage({
         </button>
       </section>
     </main>
+  );
+}
+
+function GlobalRoomModal({
+  messages,
+  value,
+  onChange,
+  onClose,
+  onSend
+}: {
+  messages: GlobalRoomMessage[];
+  value: string;
+  onChange: (value: string) => void;
+  onClose: () => void;
+  onSend: () => void;
+}) {
+  return (
+    <div style={s.profileEditOverlay}>
+      <section style={s.globalRoomModal} className="lv-pop">
+        <div style={s.profileEditHeader}>
+          <b>🌍 Global Lounge</b>
+          <button style={s.supportClose} onClick={onClose}>×</button>
+        </div>
+
+        <div style={s.globalRoomInfo}>
+          <span>live internet room</span>
+          <b>4.8k online now</b>
+        </div>
+
+        <div style={s.globalRoomFeed}>
+          {messages.map((item) => (
+            <div key={item.id} style={s.globalRoomMessage}>
+              <div style={s.globalRoomMeta}>
+                <b>{item.country} {item.user}</b>
+                <small>{item.time}</small>
+              </div>
+              <span>{item.text}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={s.globalRoomComposer}>
+          <input
+            style={s.input}
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            placeholder="send your vibe..."
+            maxLength={180}
+          />
+          <button style={s.sendButton} onClick={onSend}>➤</button>
+        </div>
+      </section>
+    </div>
   );
 }
 
