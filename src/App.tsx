@@ -40,6 +40,7 @@ type RegionProfile = { country: string; city: string; language: string; timezone
 type SupportMessage = { id: number; from: "user" | "support"; text: string; time: string };
 type AppNotification = { id: number; title: string; text: string; time: string; read: boolean; icon: string };
 type VibeStory = { id: number; imageUrl: string; caption: string; time: string };
+type SavedAura = { id: number; name: string; mood: string; match: number; lastSeen: string; avatar: string };
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -366,6 +367,8 @@ export default function App() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() =>
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
+  const [savedAuras, setSavedAuras] = useState<SavedAura[]>(() => readSavedState<SavedAura[]>("lyvora_saved_auras", []));
+  const [closeCircleOpen, setCloseCircleOpen] = useState(false);
   const [storyModalOpen, setStoryModalOpen] = useState(false);
   const [vibeStories, setVibeStories] = useState<VibeStory[]>(() => readSavedState<VibeStory[]>("lyvora_vibe_stories", []));
   const [appNotifications, setAppNotifications] = useState<AppNotification[]>([
@@ -1203,6 +1206,37 @@ async function logout() {
     setScreen("landing");
   }
 
+  function saveCurrentAura() {
+    const mood = selectedMood || MOODS[0];
+    const nextAura: SavedAura = {
+      id: Date.now(),
+      name: `${mood.title} aura`,
+      mood: mood.title,
+      match: regionalMatchScore || 94,
+      lastSeen: "şimdi aktif",
+      avatar: mood.emoji
+    };
+
+    setSavedAuras((prev) => {
+      const exists = prev.some((item) => item.mood === nextAura.mood);
+      return exists ? prev : [nextAura, ...prev].slice(0, 12);
+    });
+
+    pushAppNotification("Aura kaydedildi", `${mood.title} favorilere eklendi.`, "◈");
+    setToast("◈ Aura favorilere eklendi.");
+  }
+
+  function removeSavedAura(id: number) {
+    setSavedAuras((prev) => prev.filter((item) => item.id !== id));
+    setToast("Saved aura kaldırıldı.");
+  }
+
+  function reopenSavedAura(aura: SavedAura) {
+    const mood = MOODS.find((item) => item.title === aura.mood) || selectedMood || MOODS[0];
+    setCloseCircleOpen(false);
+    startChat(mood);
+  }
+
   async function startChat(mood: Mood) {
     if (!requireSignedIn("Sohbet başlatmak için giriş yapmalısın.")) return;
     setSelectedMood(mood);
@@ -1943,6 +1977,7 @@ async function logout() {
         <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         <div style={s.unreadMiniPanel}><span>💬</span><b>{unreadCount > 0 ? `${unreadCount} okunmamış mesaj` : "Mesajlar güncel"}</b><small>Son okuma: {new Date(lastReadAt).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</small></div>
+        <button style={s.closeCircleButton} onClick={() => setCloseCircleOpen(true)}>◈ Saved Aura • {savedAuras.length}</button>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
           <>
@@ -2077,6 +2112,50 @@ function LegalPage({
         </button>
       </section>
     </main>
+  );
+}
+
+function CloseCircleModal({
+  savedAuras,
+  onClose,
+  onOpenAura,
+  onRemove
+}: {
+  savedAuras: SavedAura[];
+  onClose: () => void;
+  onOpenAura: (aura: SavedAura) => void;
+  onRemove: (id: number) => void;
+}) {
+  return (
+    <div style={s.profileEditOverlay}>
+      <section style={s.closeCircleModal} className="lv-pop">
+        <div style={s.profileEditHeader}>
+          <b>Saved Aura</b>
+          <button style={s.supportClose} onClick={onClose}>×</button>
+        </div>
+
+        {savedAuras.length === 0 ? (
+          <div style={s.emptyStory}>
+            <b>Henüz aura kaydetmedin</b>
+            <span>Bir sohbetten ◈ Kaydet diyerek favori bağ oluştur.</span>
+          </div>
+        ) : (
+          <div style={s.savedAuraList}>
+            {savedAuras.map((aura) => (
+              <div key={aura.id} style={s.savedAuraCard}>
+                <span style={s.savedAuraIcon}>{aura.avatar}</span>
+                <div>
+                  <b>{aura.name}</b>
+                  <small>{aura.match}% match • {aura.lastSeen}</small>
+                </div>
+                <button style={s.savedAuraOpen} onClick={() => onOpenAura(aura)}>Aç</button>
+                <button style={s.savedAuraRemove} onClick={() => onRemove(aura.id)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -2568,6 +2647,14 @@ function ProfilePanel({
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
       <section style={s.settingsGlassPanel}><b>⚙️ premium aura</b><span>live signals açık • Online presence aktif • Mood sync açık</span></section>
+      <section style={s.savedAuraProfileBox}>
+        <div>
+          <b>◈ Saved Aura</b>
+          <span>{savedAuras.length} favori bağ kaydedildi.</span>
+        </div>
+        <button style={s.savedAuraOpen} onClick={() => setCloseCircleOpen(true)}>Aç</button>
+      </section>
+
       <section style={s.moderationPanel}>
         <div>
           <b>🛡️ Güvenlik merkezi</b>
