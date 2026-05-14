@@ -25,7 +25,7 @@ type Screen = "onboarding" | "landing" | "auth" | "home" | "match" | "chat" | "p
 type AuthMode = "login" | "register";
 type Tab = "home" | "chat" | "profile" | "premium";
 type Mood = { id: string; emoji: string; title: string; desc: string; color: string };
-type Message = { id: number | string; from: "me" | "bot" | "system"; text: string; time?: string; uid?: string; type?: "text" | "voice"; voiceUrl?: string; duration?: string };
+type Message = { id: number | string; from: "me" | "bot" | "system"; text: string; time?: string; uid?: string; type?: "text" | "voice" | "image"; voiceUrl?: string; duration?: string; imageUrl?: string };
 type Plan = { name: string; price: string; tag: string; features: string[]; highlight?: boolean };
 type OnboardingSlide = { emoji: string; title: string; text: string; tag: string };
 type MatchMetric = { label: string; value: number; icon: string };
@@ -313,6 +313,7 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const voiceChunksRef = useRef<Blob[]>([]);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const onlineCount = useMemo(() => Math.floor(Math.random() * 900 + 1300), []);
   const [liveOnlineCount, setLiveOnlineCount] = useState(onlineCount);
   const [deliveryState, setDeliveryState] = useState<"Gönderildi" | "İletildi" | "Görüldü">("Gönderildi");
@@ -949,7 +950,67 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
     setToast("Profil fotoğrafı kaldırıldı.");
   }
 
-  async function logout() {
+  async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setToast("Sadece görsel yükleyebilirsin.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setToast("Fotoğraf 5MB altında olmalı.");
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    const imageMessage: Message = {
+      id: Date.now(),
+      from: "me",
+      text: "Fotoğraf",
+      type: "image",
+      imageUrl,
+      time: "Şimdi",
+      uid: user?.uid
+    };
+
+    setMessages((prev) => [...prev, imageMessage]);
+
+    try {
+      await addDoc(collection(db, "rooms", activeRoomId, "messages"), {
+        from: "me",
+        text: "Fotoğraf",
+        uid: user?.uid || "anonymous",
+        type: "image",
+        createdAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.warn("Image message save skipped:", error);
+    }
+
+    setDeliveryState("Gönderildi");
+    window.setTimeout(() => setDeliveryState("İletildi"), 420);
+    window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
+
+    setIsTyping(true);
+
+    window.setTimeout(() => {
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          from: "bot",
+          text: "Fotoğrafını gördüm ✨",
+          time: "Şimdi"
+        }
+      ]);
+    }, 1200);
+  }
+
+async function logout() {
     await signOut(auth);
     setUser(null);
     setEmail("");
@@ -1601,6 +1662,22 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
               />
             )}
 
+            <button
+              type="button"
+              style={s.mediaButton}
+              onClick={() => imageInputRef.current?.click()}
+            >
+              ✦
+            </button>
+
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              style={{ display: "none" }}
+            />
+
             <button style={s.sendButton} onClick={() => sendMessage()}>➤</button>
           </footer>
           <BottomNav active="chat" onHome={() => { setActiveTab("home"); setScreen("home"); }} onChat={() => setScreen("chat")} onProfile={() => { setActiveTab("profile"); setScreen("home"); }} onPremium={() => { setActiveTab("premium"); setScreen("home"); }} />
@@ -1878,6 +1955,18 @@ function VoiceMessageCard({ duration, voiceUrl }: { duration: string; voiceUrl?:
       <VoiceWave active={playing} />
       <b>{duration}</b>
     </button>
+  );
+}
+
+function ImageMessageCard({ imageUrl }: { imageUrl?: string }) {
+  return (
+    <div style={s.imageMessageCard}>
+      {imageUrl ? (
+        <img src={imageUrl} alt="Gönderilen medya" style={s.chatImage} />
+      ) : (
+        <div style={s.imageFallback}>📸</div>
+      )}
+    </div>
   );
 }
 
