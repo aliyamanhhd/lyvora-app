@@ -465,8 +465,8 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
     setNotificationPermission(permission);
 
     if (permission === "granted") {
-      setToast("Bildirimler açıldı ✦");
-      pushAppNotification("Bildirimler aktif", "Yeni match ve mesajları kaçırmayacaksın.", "🔔");
+      setToast("live signals açıldı ✦");
+      pushAppNotification("live signals aktif", "Yeni match ve mesajları kaçırmayacaksın.", "🔔");
     } else {
       setToast("Bildirim izni verilmedi.");
     }
@@ -1176,7 +1176,7 @@ async function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
           {
             id: Date.now() + 1,
             from: "bot",
-            text: "Fotoğrafını gördüm ✨",
+            text: "your vibe looks clean ✨",
             time: "Şimdi"
           }
         ]);
@@ -1351,7 +1351,7 @@ async function logout() {
           {
             id: Date.now() + 1,
             from: "bot",
-            text: "Sesini aldım. Enerjin çok net geldi ✨",
+            text: "your aura sounds calm ✨",
             time: "Şimdi"
           }
         ]);
@@ -1775,7 +1775,7 @@ async function logout() {
         <ThemeFX light={isLight} />
         <section style={s.matchScreen} className="lv-pop">
           <div style={s.matchOrbWrap}><span style={{ ...s.matchPulseRing, transform: `scale(${1 + matchPulse * 0.08})`, opacity: 0.32 - matchPulse * 0.05 }}></span><div style={s.matchOrb}>{selectedMood?.emoji || "◈"}</div></div>
-          <h1 style={s.matchTitle}>Bağ kuruluyor</h1>
+          <h1 style={s.matchTitle}>energy syncing</h1>
           <p style={s.matchText}>{stepTexts[matchingStep] || stepTexts[0]}...</p>
           <div style={s.matchPercent}>{matchingStep === 0 ? "34" : matchingStep === 1 ? "68" : regionalMatchScore}%</div>
           <p style={s.matchRegionText}>{regionMatchLabel(regionProfile)} • {regionProfile.timezone}</p>
@@ -1837,7 +1837,7 @@ async function logout() {
           {showAiOpeners && (
             <section style={s.aiOpenerPanel}>
               <div style={s.aiOpenerTop}>
-                <b>AI opener</b>
+                <b>smart opener</b>
                 <button style={s.aiOpenerClose} onClick={() => setShowAiOpeners(false)}>×</button>
               </div>
 
@@ -2099,7 +2099,7 @@ function VibeStoryStrip({
         <span style={s.vibeStoryAvatar}>
           {profilePhoto ? <img src={profilePhoto} alt="Story" style={s.vibeStoryImage} /> : avatar}
         </span>
-        <b>Story ekle</b>
+        <b style={s.microModernText}>Live Story</b>
       </button>
 
       {stories.slice(0, 5).map((story) => (
@@ -2168,14 +2168,14 @@ function NotificationCenter({
     <div style={s.profileEditOverlay}>
       <section style={s.notificationPanel} className="lv-pop">
         <div style={s.profileEditHeader}>
-          <b>Bildirimler</b>
+          <b>live signals</b>
           <button style={s.supportClose} onClick={onClose}>×</button>
         </div>
 
         <button style={s.notificationPermissionCard} onClick={onEnable}>
           <span>🔔</span>
           <div>
-            <b>{permission === "granted" ? "Bildirimler aktif" : "Bildirimleri aç"}</b>
+            <b>{permission === "granted" ? "live signals aktif" : "live signalsi aç"}</b>
             <small>{permission === "granted" ? "Match ve mesajları kaçırmayacaksın." : "Yeni match ve mesajlarda haber verelim."}</small>
           </div>
         </button>
@@ -2350,7 +2350,7 @@ function LiveVibePanel({
     <section style={s.liveVibePanel} className="lv-premium-depth">
       <div style={s.liveVibeTop}>
         <div style={s.liveVibeTitleBox}>
-          <b>Canlı vibe</b>
+          <b>live aura</b>
           <span>{regionLabel}</span>
         </div>
 
@@ -2379,8 +2379,8 @@ function LiveVibePanel({
       <button style={s.voicePreviewCleanCard} onClick={onVoicePreview}>
         <span style={previewPlaying ? s.voicePlayActive : s.voicePlay}>{previewPlaying ? "Ⅱ" : "▶"}</span>
         <div style={s.voicePreviewText}>
-          <b>Voice preview</b>
-          <small>{previewPlaying ? "Ses dalgası aktif" : "Sesli mesaj deneyimi"}</small>
+          <b style={s.microModernText}>Voice Aura</b>
+          <small>{previewPlaying ? "Ses dalgası aktif" : "tap to listen"}</small>
         </div>
         <VoiceWave active={previewPlaying} />
       </button>
@@ -2567,7 +2567,7 @@ function ProfilePanel({
         <small style={s.profileCity}>📍 {profileCity}</small>
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
-      <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online presence aktif • Mood sync açık</span></section>
+      <section style={s.settingsGlassPanel}><b>⚙️ premium aura</b><span>live signals açık • Online presence aktif • Mood sync açık</span></section>
       <section style={s.moderationPanel}>
         <div>
           <b>🛡️ Güvenlik merkezi</b>
@@ -2575,13 +2575,13 @@ function ProfilePanel({
         </div>
         <small>Moderation ready</small>
       </section>
-      <button style={s.primaryFull} onClick={() => setEditOpen(true)}>Profili Düzenle</button>
+      <button style={s.primaryFull} onClick={() => setEditOpen(true)}>edit aura</button>
 
       {editOpen && (
         <div style={s.profileEditOverlay}>
           <section style={s.profileEditModal} className="lv-pop">
             <div style={s.profileEditHeader}>
-              <b>Profili Düzenle</b>
+              <b>edit aura</b>
               <button style={s.supportClose} onClick={() => setEditOpen(false)}>×</button>
             </div>
 
@@ -2620,7 +2620,7 @@ function ProfilePanel({
               ))}
             </div>
 
-            <button style={s.primaryFull} onClick={() => setEditOpen(false)}>Kaydet</button>
+            <button style={s.primaryFull} onClick={() => setEditOpen(false)}>save vibe</button>
           </section>
         </div>
       )}
