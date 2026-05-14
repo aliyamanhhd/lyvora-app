@@ -373,6 +373,7 @@ const MEMBERSHIP_PLANS = {
 const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free;
 
   const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
+  const [presenceSynced, setPresenceSynced] = useState(false);
 
   function scrollToSection(target: "features" | "pricing") {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
@@ -503,6 +504,70 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const userPresenceRef = doc(db, "users", user.uid);
+
+    const markOnline = async () => {
+      try {
+        await setDoc(
+          userPresenceRef,
+          {
+            online: true,
+            presence: "online",
+            lastSeen: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+        setPresenceSynced(true);
+      } catch (error) {
+        console.warn("Presence online sync skipped:", error);
+      }
+    };
+
+    const markOffline = async () => {
+      try {
+        await setDoc(
+          userPresenceRef,
+          {
+            online: false,
+            presence: "offline",
+            lastSeen: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.warn("Presence offline sync skipped:", error);
+      }
+    };
+
+    markOnline();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") markOnline();
+      else markOffline();
+    };
+
+    const handleBeforeUnload = () => {
+      markOffline();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    const presenceHeartbeat = window.setInterval(markOnline, 30000);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.clearInterval(presenceHeartbeat);
+      markOffline();
+    };
+  }, [user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -1486,7 +1551,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
         </header>
 
         {toast && <div style={s.toast} onClick={() => setToast("")}>🔔 {dynamicToast || toast}</div>}
-        <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat</small></div>
+        <div style={s.firebaseCorePanel}><span style={s.liveTinyDot}></span><b>Firebase Core bağlı</b><small>profiles • rooms • live chat • {presenceSynced ? "presence synced" : "presence ready"}</small></div>
         <div style={s.accountSecurePanel}><span>🛡️</span><b>Hesap güvenliği aktif</b><small>{user?.email ? `Giriş: ${user.email}` : "Anonim değil, giriş gerekli"}</small></div>
         {!isInstalledApp && <button style={s.installBanner} onClick={installLyvoraApp}>📲 Lyvora’yı uygulama gibi kur</button>}
         {activeTab === "home" && (
@@ -1958,7 +2023,7 @@ function ProfilePanel({
         <small style={s.profileCity}>📍 {profileCity}</small>
       </div>
       {profilePhoto && <button style={s.profilePhotoRemove} onClick={onPhotoRemove}>Fotoğrafı kaldır</button>}
-      <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online görünürlük aktif • Mood sync açık</span></section>
+      <section style={s.settingsGlassPanel}><b>⚙️ Premium settings</b><span>Bildirimler açık • Online presence aktif • Mood sync açık</span></section>
       <section style={s.moderationPanel}>
         <div>
           <b>🛡️ Güvenlik merkezi</b>
