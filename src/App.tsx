@@ -1495,7 +1495,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
           </div>
           <div style={s.chatInfo}><b>✨ Sohbet başladı!</b><span>İkiniz de {selectedMood?.title} modundasınız.</span></div>
           <div style={s.typingTopBar}>✨ typing sync active • ultra connection stable</div>
-          <div style={s.chatPresenceStrip}><span style={s.liveTinyDot}></span><b>Canlı bağlantı aktif</b><small>{deliveryState} • okundu senkronize</small></div>
+          <div style={s.chatPresenceStrip}><span style={s.liveTinyDot}></span><b>Canlı bağlantı aktif</b><small>{deliveryState}</small></div>
           <div style={s.messages}>
             {messages.map((msg) => <Bubble key={msg.id} msg={msg} />)}
             {isTyping && <TypingBubble />}
