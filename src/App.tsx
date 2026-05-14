@@ -33,6 +33,7 @@ type ActivityItem = { icon: string; title: string; text: string; time: string };
 type DiscoverCard = { emoji: string; title: string; tag: string; match: number };
 type RegionProfile = { country: string; city: string; language: string; timezone: string; mode: "local" | "country" | "global" };
 type SupportMessage = { id: number; from: "user" | "support"; text: string; time: string };
+type AppNotification = { id: number; title: string; text: string; time: string; read: boolean; icon: string };
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -354,6 +355,20 @@ export default function App() {
   const [regionProfile, setRegionProfile] = useState<RegionProfile>(() => detectRegionProfile());
   const [regionalMatchScore, setRegionalMatchScore] = useState(96);
   const [activityPulse, setActivityPulse] = useState(0);
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>(() =>
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
+  const [appNotifications, setAppNotifications] = useState<AppNotification[]>([
+    {
+      id: 1,
+      title: "Lyvora hazır",
+      text: "Yeni eşleşmeler ve mesaj bildirimleri burada görünecek.",
+      time: "Şimdi",
+      read: false,
+      icon: "✦"
+    }
+  ]);
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
@@ -408,6 +423,49 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
   const [lastSeenLabel, setLastSeenLabel] = useState("şimdi aktif");
   const [presenceSynced, setPresenceSynced] = useState(false);
   const [lastReadAt, setLastReadAt] = useState<number>(() => readSavedState<number>("lyvora_last_read_at", Date.now()));
+
+  function pushAppNotification(title: string, text: string, icon = "✦") {
+    const nextNotification: AppNotification = {
+      id: Date.now(),
+      title,
+      text,
+      time: "Şimdi",
+      read: false,
+      icon
+    };
+
+    setAppNotifications((prev) => [nextNotification, ...prev].slice(0, 12));
+
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      try {
+        new Notification(title, {
+          body: text,
+          icon: "/logo.svg"
+        });
+      } catch {}
+    }
+  }
+
+  async function requestNotificationAccess() {
+    if (typeof Notification === "undefined") {
+      setToast("Bu tarayıcı bildirimleri desteklemiyor.");
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+
+    if (permission === "granted") {
+      setToast("Bildirimler açıldı ✦");
+      pushAppNotification("Bildirimler aktif", "Yeni match ve mesajları kaçırmayacaksın.", "🔔");
+    } else {
+      setToast("Bildirim izni verilmedi.");
+    }
+  }
+
+  function markNotificationsRead() {
+    setAppNotifications((prev) => prev.map((item) => ({ ...item, read: true })));
+  }
 
   function scrollToSection(target: "features" | "pricing") {
     const section = target === "features" ? featuresRef.current : pricingRef.current;
@@ -724,6 +782,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
     const pushTicker = window.setInterval(() => {
       const nextNotification = notifications[Math.floor(Math.random() * notifications.length)];
       setDynamicToast(nextNotification);
+      pushAppNotification("Canlı aktivite", nextNotification.replace(/^\S+\s/, ""), "✦");
       setActivityPulse((prev) => prev + 1);
       setProfileVisitors((prev) => prev + Math.floor(Math.random() * 3));
       if (nextNotification.includes("eşleşme")) {
@@ -1030,6 +1089,7 @@ const currentPlan = isPremium ? MEMBERSHIP_PLANS.premium : MEMBERSHIP_PLANS.free
       console.warn("Image message save skipped:", error);
     }
 
+    pushAppNotification("Mesaj gönderildi", "Mesajın güvenli şekilde iletiliyor.", "💬");
     setDeliveryState("Gönderildi");
     window.setTimeout(() => setDeliveryState("İletildi"), 420);
     window.setTimeout(() => setDeliveryState("Görüldü"), 1150);
@@ -1760,6 +1820,16 @@ async function logout() {
         {showMatchModal && <div style={s.newMatchModal} className="lv-pop"><div style={s.newMatchOrb}>💜</div><b>New match found</b><span>%96 mood uyumu yakalandı</span><button style={s.modalButton} onClick={() => startChat(MOODS[2])}>Sohbeti Aç</button></div>}
         <header style={s.appHeader}>
           <Brand avatar={avatar} sub={displayName} />
+          <button
+            style={s.notificationBell}
+            onClick={() => {
+              setNotificationPanelOpen(true);
+              markNotificationsRead();
+            }}
+          >
+            🔔
+            {appNotifications.some((item) => !item.read) && <span style={s.notificationDot}></span>}
+          </button>
           <button style={s.navButton} onClick={logout}>Çıkış</button>
         </header>
 
@@ -1851,6 +1921,15 @@ async function logout() {
           </>
         )}
 
+        {notificationPanelOpen && (
+          <NotificationCenter
+            notifications={appNotifications}
+            permission={notificationPermission}
+            onClose={() => setNotificationPanelOpen(false)}
+            onEnable={requestNotificationAccess}
+          />
+        )}
+
         <BottomNav active={activeTab} onHome={() => setActiveTab("home")} onChat={() => setActiveTab("chat")} onProfile={() => setActiveTab("profile")} onPremium={() => setActiveTab("premium")} />
         <SupportWidget
           open={supportOpen}
@@ -1896,6 +1975,50 @@ function LegalPage({
         </button>
       </section>
     </main>
+  );
+}
+
+function NotificationCenter({
+  notifications,
+  permission,
+  onClose,
+  onEnable
+}: {
+  notifications: AppNotification[];
+  permission: NotificationPermission;
+  onClose: () => void;
+  onEnable: () => void;
+}) {
+  return (
+    <div style={s.profileEditOverlay}>
+      <section style={s.notificationPanel} className="lv-pop">
+        <div style={s.profileEditHeader}>
+          <b>Bildirimler</b>
+          <button style={s.supportClose} onClick={onClose}>×</button>
+        </div>
+
+        <button style={s.notificationPermissionCard} onClick={onEnable}>
+          <span>🔔</span>
+          <div>
+            <b>{permission === "granted" ? "Bildirimler aktif" : "Bildirimleri aç"}</b>
+            <small>{permission === "granted" ? "Match ve mesajları kaçırmayacaksın." : "Yeni match ve mesajlarda haber verelim."}</small>
+          </div>
+        </button>
+
+        <div style={s.notificationList}>
+          {notifications.map((item) => (
+            <div key={item.id} style={item.read ? s.notificationItem : s.notificationItemUnread}>
+              <span>{item.icon}</span>
+              <div>
+                <b>{item.title}</b>
+                <small>{item.text}</small>
+              </div>
+              <em>{item.time}</em>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
